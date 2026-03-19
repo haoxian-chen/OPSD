@@ -150,6 +150,8 @@ See [`scripts/run_sft.sh`](scripts/run_sft.sh).
 
 See [`scripts/run_grpo.sh`](scripts/run_grpo.sh).
 
+### Acknowledgements
+Our implementation builds on [TRL GOLD Trainer](https://huggingface.co/docs/trl/gold_trainer). We sincerely thank [@simran135](https://github.com/simran135) and [@beanie00](https://github.com/beanie00) for identifying the prompt template bugs and the zero-2 issue, respectively!
 
 ## Citation
 If you find this useful, please consider citing:
