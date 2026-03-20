@@ -138,7 +138,7 @@ See
 | `--use_tinker_loss` | `False` | Use sampled-token policy-gradient objective instead of full-vocabulary JSD. More memory efficient. Currently no clipped implemented for this variant, could be unstable. |
 | `--max_completion_length` | — | Student generation length for distillation. We use 1024 in our main experiments. |
 | `--beta` | — | Interpolation weight for the JSD mixture distribution. Beta=0 means forward KL and 1 means reverse KL. |
-| `--jsd_token_clip` | — | Clip the JSD loss for each token to a maximum value. This can improve stability by preventing stylistic tokens from dominating the training signal. | 
+| `--jsd_token_clip` | 0.05 | Clip the JSD loss for each token to a maximum value. This can improve stability by preventing stylistic tokens from dominating the training signal. | 
 | `--reason_first` | `False` | Prepend an explicit rationalization to the teacher context before distillation. |
 | `--run_config` | `None` | Custom name suffix for the output directory and WandB run. |
 
