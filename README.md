@@ -18,7 +18,7 @@
 
   (1) Fixed chat template and zero2 bugs (see [template issue](https://github.com/huggingface/trl/issues/5241)), we re-ran experiments with updated results (detailed results & ablations  to be updated on arxiv/blog shortly). The fixes yield improved OPSD performance, most notably on Qwen3-1.7B.
 
-  (2) Added a new training stabilization strategy 🚀: per-token KL clipping. We find style tokens (such as 'wait', 'think') can exhibit 6–15× higher KL divergence than math-related tokens, and dominates the training signal. Clipping stablizes training and improves performance.
+  (2) Added a new training stabilization strategy 🚀: per-token point-wise KL clipping. We find style tokens (such as 'wait', 'think') can exhibit 6–15× higher KL divergence than math-related tokens, and dominates the training signal. Clipping stablizes training and improves performance.
 
 
 -  **Mar 3, 2026**: Initial code release.
@@ -135,9 +135,9 @@ See
 | Argument | Default | Description |
 |---|---|---|
 | `--fixed_teacher` | `False` | Fix the teacher to the initial policy (step 0). Requires `--use_peft`. Recommended. |
-| `--use_tinker_loss` | `False` | Use sampled-token policy-gradient objective instead of full-vocabulary JSD. More memory efficient. |
+| `--use_tinker_loss` | `False` | Use sampled-token policy-gradient objective instead of full-vocabulary JSD. More memory efficient. Currently no clipped implemented for this variant, could be unstable. |
 | `--max_completion_length` | — | Student generation length for distillation. We use 1024 in our main experiments. |
-| `--beta` | — | Interpolation weight for the JSD mixture distribution. |
+| `--beta` | — | Interpolation weight for the JSD mixture distribution. Beta=0 means forward KL and 1 means reverse KL. |
 | `--jsd_token_clip` | — | Clip the JSD loss for each token to a maximum value. This can improve stability by preventing stylistic tokens from dominating the training signal. | 
 | `--reason_first` | `False` | Prepend an explicit rationalization to the teacher context before distillation. |
 | `--run_config` | `None` | Custom name suffix for the output directory and WandB run. |
