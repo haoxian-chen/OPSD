@@ -2,7 +2,7 @@
 
 
 <p align="center">
-<a href="https://arxiv.org/abs/2601.18734"><img src="https://img.shields.io/badge/arXiv-2601.18734-b31b1b.svg"></a>
+<a href="https://arxiv.org/pdf/2601.18734v3"><img src="https://img.shields.io/badge/arXiv-2601.18734-b31b1b.svg"></a>
 <a href="https://siyan-zhao.github.io/blog/2026/opsd/"><img src="https://img.shields.io/badge/Blog-Post-blue.svg"></a>
 </p>
 
@@ -16,7 +16,7 @@
 
 - **Mar 18, 2026**: Released updated code. 
 
-  (1) Fixed chat template and zero2 bugs (see [template issue](https://github.com/huggingface/trl/issues/5241)), we re-ran experiments with updated results (detailed results & ablations  to be updated on arxiv/blog shortly). The fixes yield improved OPSD performance, most notably on Qwen3-1.7B.
+  (1) Fixed chat template and zero2 bugs (see [template issue](https://github.com/huggingface/trl/issues/5241)), we re-ran experiments with updated results (detailed results & ablations updated on arxiv/blog). The fixes yield improved OPSD performance, most notably on Qwen3-1.7B.
 
   (2) Added a new training stabilization strategy 🚀: per-token point-wise KL clipping. We find style tokens (such as 'wait', 'think') can exhibit 6–15× higher KL divergence than math-related tokens, and dominates the training signal. Clipping stablizes training and improves performance.
 
