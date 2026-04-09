@@ -24,7 +24,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 accelerate launch \
     --use_peft \
     --vllm_mode colocate \
     --logging_steps 10 \
-    --save_steps 50 \
+    --save_steps 20 \
     --beta 0.0 \
     --loss_type grpo \
     --scale_rewards group \

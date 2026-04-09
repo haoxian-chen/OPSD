@@ -17,4 +17,4 @@ accelerate launch \
     --lora_target_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
     --max_length 16000 \
     --logging_steps 5 \
-    --save_steps 100
+    --save_steps 20
