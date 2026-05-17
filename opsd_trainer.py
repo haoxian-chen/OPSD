@@ -62,6 +62,7 @@ from trl.trainer.utils import (
 )
 from trl.experimental.gold.gold_config import GOLDConfig
 from data_collator import SelfDistillationDataCollator
+from opsd_losses import DIVERGENCE_TYPES, _compute_neg_g_u, _tinker_loss_from_logprobs  # noqa: F401
 
 
 if is_peft_available():
@@ -136,6 +137,7 @@ class OPSDTrainer(SFTTrainer):
         preprocess_logits_for_metrics: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] | None = None,
         peft_config: Optional["PeftConfig"] = None,
         use_thinking_machines_loss: bool = False,
+        divergence_type: str = "reverse_kl",
         fixed_teacher: bool = False,
         reason_first: bool = False,
         top_k_loss: int | None = None,
@@ -184,6 +186,18 @@ class OPSDTrainer(SFTTrainer):
         self.top_p = args.top_p
         self.seq_kd = args.seq_kd
         self.use_thinking_machines_loss = use_thinking_machines_loss
+        if divergence_type not in DIVERGENCE_TYPES:
+            raise ValueError(
+                f"divergence_type={divergence_type!r} not in {DIVERGENCE_TYPES}"
+            )
+        self.divergence_type = divergence_type
+        if not use_thinking_machines_loss and divergence_type != "reverse_kl":
+            warnings.warn(
+                f"divergence_type={divergence_type!r} has no effect when "
+                "use_thinking_machines_loss=False (the supervised generalized-JSD "
+                "branch is controlled by `beta`, not divergence_type).",
+                stacklevel=2,
+            )
         self.fixed_teacher = fixed_teacher
         self.reason_first = reason_first
         self.top_k_loss = top_k_loss
@@ -703,34 +717,24 @@ class OPSDTrainer(SFTTrainer):
 
         # === COMPUTE LOSS with only small tensors ===
         if self.use_thinking_machines_loss:
-            # Thinking Machines uses RL-style policy gradient:
-            # Advantage = log π_teacher(x) - log π_student(x)
-            # Loss = -E[Advantage * log π_student(x)]
+            # RL-style policy gradient with an f-divergence per-token advantage.
+            # A = -g(u),  u = p_teacher / q_student  (see _compute_neg_g_u).
+            # Loss = -E[A * log π_student(x)].
             #
-            # CRITICAL: advantage must be detached to prevent gradients flowing through it.
-            # We want: ∇θ L = -E[A(x) * ∇θ log π_student(x)]
-            # NOT: ∇θ L = -E[(T(x) - S(x)) * ∇θ S(x)] where both terms differentiate
-
-            advantage = (teacher_log_probs_sampled - student_log_probs_sampled).detach()
-
-            # Apply masking before computing loss
-            if shifted_labels is not None:
-                mask = shifted_labels != -100
-                advantage = advantage[mask]
-                student_log_probs_sampled_masked = student_log_probs_sampled[mask]
-            else:
-                student_log_probs_sampled_masked = student_log_probs_sampled
-
-            # Policy gradient loss: -advantage * log π_student
-            # Negative because we minimize loss (gradient descent), but want to maximize reward
-            loss = -(advantage * student_log_probs_sampled_masked).mean()
-
-            del (
-                student_log_probs_sampled,
-                teacher_log_probs_sampled,
-                advantage,
-                student_log_probs_sampled_masked,
+            # For divergence_type="reverse_kl" this is bit-exact with the
+            # prior implementation (advantage = log_u).
+            loss, tinker_metrics = _tinker_loss_from_logprobs(
+                student_log_probs_sampled=student_log_probs_sampled,
+                teacher_log_probs_sampled=teacher_log_probs_sampled,
+                shifted_labels=shifted_labels,
+                divergence_type=self.divergence_type,
             )
+
+            mode = "train" if self.model.training else "eval"
+            for key, val in tinker_metrics.items():
+                self._metrics[mode][key].append(val)
+
+            del student_log_probs_sampled, teacher_log_probs_sampled
         else:
             # Temperature is applied inside generalized_jsd_loss
             loss = self.generalized_jsd_loss(

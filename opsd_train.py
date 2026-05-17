@@ -32,6 +32,17 @@ class CustomScriptArguments(ScriptArguments):
             "This is much more memory efficient (O(1) vs O(vocab_size) per token)."
         },
     )
+    divergence_type: str = field(
+        default="reverse_kl",
+        metadata={
+            "help": "f-divergence used for the per-token advantage when use_tinker_loss=True. "
+            "One of: reverse_kl (default, matches prior behavior), forward_kl, jsd, "
+            "improved_forward_kl, improved_jsd. The 'improved_*' variants are the "
+            "bias-corrected (exact-PG) versions of forward_kl and jsd. Ignored when "
+            "use_tinker_loss=False (the full-vocab generalized-JSD branch is "
+            "controlled by `beta`, not divergence_type)."
+        },
+    )
     fixed_teacher: bool = field(
         default=False,
         metadata={
@@ -191,6 +202,7 @@ if __name__ == "__main__":
                 "gradient_checkpointing": training_args.gradient_checkpointing,
                 "num_processes": num_processes,
                 "use_tinker_loss": script_args.use_tinker_loss,
+                "divergence_type": script_args.divergence_type if script_args.use_tinker_loss else None,
                 "fixed_teacher": script_args.fixed_teacher,
                 "top_k_loss": script_args.top_k_loss if script_args.top_k_loss > 0 else None,
                 "use_ema_teacher": script_args.use_ema_teacher,
@@ -274,6 +286,7 @@ if __name__ == "__main__":
         processing_class=tokenizer,
         peft_config=get_peft_config(model_args),
         use_thinking_machines_loss=script_args.use_tinker_loss,
+        divergence_type=script_args.divergence_type,
         fixed_teacher=script_args.fixed_teacher,
         reason_first=script_args.reason_first,
         top_k_loss=script_args.top_k_loss if script_args.top_k_loss > 0 else None,

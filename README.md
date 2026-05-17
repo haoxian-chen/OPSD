@@ -296,6 +296,19 @@ See [`scripts/run_sft.sh`](scripts/run_sft.sh).
 
 See [`scripts/run_grpo.sh`](scripts/run_grpo.sh).
 
+## Running tests
+
+Unit tests for the sampled-token f-divergence loss helpers live in `tests/`
+and depend only on `torch` and `pytest`:
+
+```bash
+pytest tests/ -q
+```
+
+These cover `_compute_neg_g_u`, the `_tinker_loss_from_logprobs` free function,
+and a bit-exact regression guard for `divergence_type="reverse_kl"` against
+the pre-refactor formula.
+
 ### Acknowledgements
 Our implementation builds on [TRL GOLD Trainer](https://huggingface.co/docs/trl/gold_trainer). We sincerely thank [@simran135](https://github.com/simran135) and [@beanie00](https://github.com/beanie00) for identifying the prompt template bugs and the zero-2 issue, respectively!
 
