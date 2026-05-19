@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+plans/
 .env.local
 .env*.local
 wandb/
