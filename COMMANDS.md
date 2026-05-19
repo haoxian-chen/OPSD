@@ -9,11 +9,18 @@ loss for all 5 f-divergences:
 4. `improved_forward_kl` — bias-corrected exact-PG variant
 5. `improved_jsd` — bias-corrected exact-PG variant
 
-All commands assume 4×H100 (or similar) and the `opsd` conda env from `environment.yml`.
-Adjust `--model_name_or_path`, `--output_dir`, and `CUDA_VISIBLE_DEVICES` for your setup.
+All 5 variants share the same hyper-parameters; they differ only in
+`--divergence_type` and `--run_config`. We expose them through parameterized scripts:
 
-> The 5 runs are differentiated only by `--divergence_type` and `--run_config`.
-> Everything else mirrors `scripts/run_opsd_1b.sh`.
+| Script | Model | Mode | Notes |
+|---|---|---|---|
+| `scripts/run_opsd_1b_tinker.sh` | Qwen3-1.7B | thinking | 4 GPUs, jsd_token_clip 0.05 |
+| `scripts/run_opsd_4b_tinker.sh` | Qwen3-4B | thinking | 8 GPUs, jsd_token_clip 0.05 |
+| `scripts/run_opsd_4b_nonthink_tinker.sh` | Qwen3-4B | non-thinking | 4 GPUs, jsd_token_clip 1e-6 |
+| `scripts/run_opsd_8b_tinker.sh` | Qwen3-8B | thinking | 8 GPUs, jsd_token_clip 0.06 |
+| `scripts/run_opsd_8b_nonthink_tinker.sh` | Qwen3-8B | non-thinking | 8 GPUs, jsd_token_clip 1e-7 |
+
+All take `<divergence_type> [--smoke]` as args.
 
 ---
 
@@ -25,262 +32,90 @@ conda activate opsd
 pip install flash-attn==2.8.3 --no-build-isolation
 ```
 
-Shared variables used below:
+One-time logins:
 
 ```bash
-export MODEL=/data0/shared/Qwen3-1.7B
-export OUT=/data0/siyanz/opsd
+hf auth login       # for model + dataset downloads
+wandb login         # or set WANDB_MODE=disabled to skip
+```
+
+Shared variables (override the script defaults):
+
+```bash
+export MODEL=Qwen/Qwen3-1.7B            # HF id; auto-downloads on first use
+export OUT=/home/$USER/opsd_runs        # checkpoints land here
+mkdir -p $OUT
 ```
 
 ---
 
-## 1. Reverse KL (original Tinker-style loss)
+## 1. Smoke test (≈2–3 min)
+
+Verify the pipeline end-to-end before committing to a 15-min run:
 
 ```bash
-accelerate launch \
-    --config_file accelerate.yaml \
-    --num_processes 4 \
-    --gradient_accumulation_steps 2 \
-    --main_process_port 12949 \
-    opsd_train.py \
-    --model_name_or_path $MODEL \
-    --learning_rate 5e-6 \
-    --max_grad_norm 0.1 \
-    --per_device_train_batch_size 4 \
-    --gradient_checkpointing \
-    --gradient_accumulation_steps 2 \
-    --output_dir $OUT \
-    --run_config qwen31b_tinker_reverse_kl \
-    --num_train_epochs 30 \
-    --max_completion_length 1024 \
-    --save_steps 25 \
-    --logging_steps 2 \
-    --attn_implementation flash_attention_2 \
-    --torch_dtype bfloat16 \
-    --max_length 20000 \
-    --beta 0 \
-    --use_vllm \
-    --vllm_mode colocate \
-    --vllm_gpu_memory_utilization 0.6 \
-    --vllm_tensor_parallel_size 1 \
-    --use_peft \
-    --lora_r 64 \
-    --lora_alpha 128 \
-    --lora_target_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
-    --temperature 1.1 \
-    --top_p 0.95 \
-    --top_k 20 \
-    --lmbda 1 \
-    --fixed_teacher \
-    --use_tinker_loss \
-    --divergence_type reverse_kl \
-    --jsd_token_clip 0.05 \
-    --wandb_project OPSD
+bash scripts/run_opsd_1b_tinker.sh reverse_kl --smoke
 ```
 
-## 2. Forward KL
+`--smoke` overrides the training schedule to `max_steps=4`, `save_steps=2`,
+`max_completion_length=256`, and prefixes the run name with `smoke_`.
 
-```bash
-accelerate launch \
-    --config_file accelerate.yaml \
-    --num_processes 4 \
-    --gradient_accumulation_steps 2 \
-    --main_process_port 12949 \
-    opsd_train.py \
-    --model_name_or_path $MODEL \
-    --learning_rate 5e-6 \
-    --max_grad_norm 0.1 \
-    --per_device_train_batch_size 4 \
-    --gradient_checkpointing \
-    --gradient_accumulation_steps 2 \
-    --output_dir $OUT \
-    --run_config qwen31b_tinker_forward_kl \
-    --num_train_epochs 30 \
-    --max_completion_length 1024 \
-    --save_steps 25 \
-    --logging_steps 2 \
-    --attn_implementation flash_attention_2 \
-    --torch_dtype bfloat16 \
-    --max_length 20000 \
-    --beta 0 \
-    --use_vllm \
-    --vllm_mode colocate \
-    --vllm_gpu_memory_utilization 0.6 \
-    --vllm_tensor_parallel_size 1 \
-    --use_peft \
-    --lora_r 64 \
-    --lora_alpha 128 \
-    --lora_target_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
-    --temperature 1.1 \
-    --top_p 0.95 \
-    --top_k 20 \
-    --lmbda 1 \
-    --fixed_teacher \
-    --use_tinker_loss \
-    --divergence_type forward_kl \
-    --jsd_token_clip 0.05 \
-    --wandb_project OPSD
-```
-
-## 3. JSD
-
-```bash
-accelerate launch \
-    --config_file accelerate.yaml \
-    --num_processes 4 \
-    --gradient_accumulation_steps 2 \
-    --main_process_port 12949 \
-    opsd_train.py \
-    --model_name_or_path $MODEL \
-    --learning_rate 5e-6 \
-    --max_grad_norm 0.1 \
-    --per_device_train_batch_size 4 \
-    --gradient_checkpointing \
-    --gradient_accumulation_steps 2 \
-    --output_dir $OUT \
-    --run_config qwen31b_tinker_jsd \
-    --num_train_epochs 30 \
-    --max_completion_length 1024 \
-    --save_steps 25 \
-    --logging_steps 2 \
-    --attn_implementation flash_attention_2 \
-    --torch_dtype bfloat16 \
-    --max_length 20000 \
-    --beta 0 \
-    --use_vllm \
-    --vllm_mode colocate \
-    --vllm_gpu_memory_utilization 0.6 \
-    --vllm_tensor_parallel_size 1 \
-    --use_peft \
-    --lora_r 64 \
-    --lora_alpha 128 \
-    --lora_target_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
-    --temperature 1.1 \
-    --top_p 0.95 \
-    --top_k 20 \
-    --lmbda 1 \
-    --fixed_teacher \
-    --use_tinker_loss \
-    --divergence_type jsd \
-    --jsd_token_clip 0.05 \
-    --wandb_project OPSD
-```
-
-## 4. Improved Forward KL (exact-PG)
-
-```bash
-accelerate launch \
-    --config_file accelerate.yaml \
-    --num_processes 4 \
-    --gradient_accumulation_steps 2 \
-    --main_process_port 12949 \
-    opsd_train.py \
-    --model_name_or_path $MODEL \
-    --learning_rate 5e-6 \
-    --max_grad_norm 0.1 \
-    --per_device_train_batch_size 4 \
-    --gradient_checkpointing \
-    --gradient_accumulation_steps 2 \
-    --output_dir $OUT \
-    --run_config qwen31b_tinker_improved_forward_kl \
-    --num_train_epochs 30 \
-    --max_completion_length 1024 \
-    --save_steps 25 \
-    --logging_steps 2 \
-    --attn_implementation flash_attention_2 \
-    --torch_dtype bfloat16 \
-    --max_length 20000 \
-    --beta 0 \
-    --use_vllm \
-    --vllm_mode colocate \
-    --vllm_gpu_memory_utilization 0.6 \
-    --vllm_tensor_parallel_size 1 \
-    --use_peft \
-    --lora_r 64 \
-    --lora_alpha 128 \
-    --lora_target_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
-    --temperature 1.1 \
-    --top_p 0.95 \
-    --top_k 20 \
-    --lmbda 1 \
-    --fixed_teacher \
-    --use_tinker_loss \
-    --divergence_type improved_forward_kl \
-    --jsd_token_clip 0.05 \
-    --wandb_project OPSD
-```
-
-## 5. Improved JSD (exact-PG)
-
-```bash
-accelerate launch \
-    --config_file accelerate.yaml \
-    --num_processes 4 \
-    --gradient_accumulation_steps 2 \
-    --main_process_port 12949 \
-    opsd_train.py \
-    --model_name_or_path $MODEL \
-    --learning_rate 5e-6 \
-    --max_grad_norm 0.1 \
-    --per_device_train_batch_size 4 \
-    --gradient_checkpointing \
-    --gradient_accumulation_steps 2 \
-    --output_dir $OUT \
-    --run_config qwen31b_tinker_improved_jsd \
-    --num_train_epochs 30 \
-    --max_completion_length 1024 \
-    --save_steps 25 \
-    --logging_steps 2 \
-    --attn_implementation flash_attention_2 \
-    --torch_dtype bfloat16 \
-    --max_length 20000 \
-    --beta 0 \
-    --use_vllm \
-    --vllm_mode colocate \
-    --vllm_gpu_memory_utilization 0.6 \
-    --vllm_tensor_parallel_size 1 \
-    --use_peft \
-    --lora_r 64 \
-    --lora_alpha 128 \
-    --lora_target_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
-    --temperature 1.1 \
-    --top_p 0.95 \
-    --top_k 20 \
-    --lmbda 1 \
-    --fixed_teacher \
-    --use_tinker_loss \
-    --divergence_type improved_jsd \
-    --jsd_token_clip 0.05 \
-    --wandb_project OPSD
-```
+Pass criteria:
+- no tracebacks
+- `$OUT/smoke_reverse_kl_*/checkpoint-{2,4}` exist
+- loss printed each step
+- vLLM init + a generation actually happened
 
 ---
 
-## 6. Evaluation
+## 2. Full training — all 5 divergences
 
-For each `$RUN_CONFIG` above, evaluate the base model once and each saved checkpoint
-on AIME24 / AIME25 / HMMT25:
+Each run takes ~15 min on 4×H100, saves checkpoints at steps 25/50/75/100.
+
+```bash
+bash scripts/run_opsd_1b_tinker.sh reverse_kl
+bash scripts/run_opsd_1b_tinker.sh forward_kl
+bash scripts/run_opsd_1b_tinker.sh jsd
+bash scripts/run_opsd_1b_tinker.sh improved_forward_kl
+bash scripts/run_opsd_1b_tinker.sh improved_jsd
+```
+
+Run them serially in `tmux`/`screen` so they survive SSH disconnects:
+
+```bash
+tmux new -s opsd
+for div in reverse_kl forward_kl jsd improved_forward_kl improved_jsd; do
+    bash scripts/run_opsd_1b_tinker.sh $div
+done
+# Ctrl+B then D to detach; `tmux attach -t opsd` to reattach
+```
+
+Checkpoints land in `$OUT/qwen31b_tinker_<divergence>/checkpoint-{25,50,75,100}`.
+
+---
+
+## 3. Evaluation
+
+Evaluate the base model once, then each checkpoint of each variant on AIME24 / AIME25 / HMMT25:
 
 ```bash
 cd eval
 
-BASE_MODEL=/data0/shared/Qwen3-1.7B
-
-# Base model (run once across all variants)
+# Base model (run once)
 NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES=0,1,2,3 python evaluate_math.py \
-    --base_model "$BASE_MODEL" \
+    --base_model "$MODEL" \
     --dataset aime24 \
     --val_n 12 \
     --temperature 1.0 \
     --tensor_parallel_size 4
 
-# Loop over variants and checkpoints
+# Each variant × checkpoint × dataset
 for variant in reverse_kl forward_kl jsd improved_forward_kl improved_jsd; do
-    EXP_DIR=/data0/siyanz/opsd/qwen31b_tinker_${variant}
+    EXP_DIR=$OUT/qwen31b_tinker_${variant}
     for step in 25 50 75 100; do
         for ds in aime24 aime25 hmmt25; do
             NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES=0,1,2,3 python evaluate_math.py \
-                --base_model "$BASE_MODEL" \
+                --base_model "$MODEL" \
                 --dataset "$ds" \
                 --val_n 12 \
                 --temperature 1.0 \
@@ -291,11 +126,12 @@ for variant in reverse_kl forward_kl jsd improved_forward_kl improved_jsd; do
 done
 ```
 
-Evaluation settings match the README: temperature=1.0, thinking mode, max new tokens=38912, top-p=none, top-k disabled, min-p=0, num samples=12.
+Evaluation settings match the README: temperature=1.0, thinking mode,
+max new tokens=38912, top-p=none, top-k disabled, min-p=0, num samples=12.
 
 ---
 
-## 7. Unit tests for the new loss helpers
+## 4. Unit tests for the new loss helpers
 
 ```bash
 pytest tests/ -q
@@ -304,3 +140,16 @@ pytest tests/ -q
 Covers `_compute_neg_g_u`, `_tinker_loss_from_logprobs`, and a bit-exact
 regression guard for `divergence_type="reverse_kl"` against the pre-refactor
 formula.
+
+---
+
+## Notes
+
+- **Datasets** auto-download from HuggingFace: training uses
+  `siyanzhao/Openthoughts_math_30k_opsd`; evaluation uses
+  `HuggingFaceH4/aime_2024`, `yentinglin/aime_2025`, `MathArena/hmmt_feb_2025`.
+- **Model**: `MODEL=Qwen/Qwen3-1.7B` downloads via HF on first run.
+  Use a local path (e.g. `/data0/shared/Qwen3-1.7B`) if your nodes have no internet.
+- **Port conflict**: if `--main_process_port 12949` is taken, edit the script.
+- **WandB**: runs log to project `OPSD` with run name `qwen31b_tinker_<divergence>`.
+  Set `WANDB_MODE=disabled` to skip.
