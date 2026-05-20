@@ -73,11 +73,11 @@ Pass criteria:
 Each run takes ~15 min on 4×H100, saves checkpoints at steps 25/50/75/100.
 
 ```bash
-bash scripts/run_opsd_1b_tinker.sh reverse_kl
-bash scripts/run_opsd_1b_tinker.sh forward_kl
-bash scripts/run_opsd_1b_tinker.sh jsd
-bash scripts/run_opsd_1b_tinker.sh improved_forward_kl
-bash scripts/run_opsd_1b_tinker.sh improved_jsd
+bash scripts/run_opsd_1b_hkaift.sh reverse_kl
+bash scripts/run_opsd_1b_hkaift.sh forward_kl
+bash scripts/run_opsd_1b_hkaift.sh jsd
+bash scripts/run_opsd_1b_hkaift.sh improved_forward_kl
+bash scripts/run_opsd_1b_hkaift.sh improved_jsd
 ```
 
 Run them serially in `tmux`/`screen` so they survive SSH disconnects:

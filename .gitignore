@@ -5,3 +5,4 @@ plans/
 .env.local
 .env*.local
 wandb/
+runs/

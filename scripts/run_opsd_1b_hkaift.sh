@@ -28,7 +28,7 @@ case "$DIV" in
 esac
 
 MODEL="${MODEL:-Qwen/Qwen3-1.7B}"
-OUT="${OUT:-/OPSD/runs/}"
+OUT="${OUT:-/home/hanyang/OPSD/runs/1b_tinker}"
 
 if [[ "$SMOKE" == "--smoke" ]]; then
     RUN_CONFIG="smoke_${DIV}"
@@ -38,7 +38,7 @@ elif [[ -n "$SMOKE" ]]; then
     exit 1
 else
     RUN_CONFIG="qwen31b_tinker_${DIV}"
-    STEP_ARGS=(--num_train_epochs 30 --save_steps 25 --logging_steps 2 --max_completion_length 1024)
+    STEP_ARGS=(--num_train_epochs 3 --save_steps 100 --logging_steps 2 --max_completion_length 1024)
 fi
 
 echo "[run_opsd_1b_tinker] MODEL=$MODEL"
@@ -47,14 +47,14 @@ echo "[run_opsd_1b_tinker] divergence_type=$DIV  run_config=$RUN_CONFIG"
 
 accelerate launch \
     --config_file accelerate.yaml \
-    --num_processes 4 \
+    --num_processes 7 \
     --gradient_accumulation_steps 2 \
     --main_process_port 12949 \
     opsd_train.py \
     --model_name_or_path "$MODEL" \
     --learning_rate 5e-6 \
     --max_grad_norm 0.1 \
-    --per_device_train_batch_size 4 \
+    --per_device_train_batch_size 2 \
     --gradient_checkpointing \
     --gradient_accumulation_steps 2 \
     --output_dir "$OUT" \
