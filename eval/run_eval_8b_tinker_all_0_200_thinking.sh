@@ -31,6 +31,9 @@ CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
 TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-4}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.9}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-38912}"
+WANDB_PROJECT="${WANDB_PROJECT-OPSD}"
+WANDB_GROUP="${WANDB_GROUP:-eval_qwen38b_tinker_all_${DATASET}_thinking}"
+WANDB_TAGS="${WANDB_TAGS:-eval,8b,tinker,thinking}"
 
 read -r -a DIVERGENCE_LIST <<< "$DIVERGENCES"
 read -r -a STEPS <<< "${STEP_LIST//,/ }"
@@ -91,11 +94,22 @@ fi
 if [[ -n "${PRESENCE_PENALTY:-}" ]]; then
     EVAL_ARGS+=(--presence_penalty "$PRESENCE_PENALTY")
 fi
+if [[ -n "${WANDB_PROJECT:-}" ]]; then
+    EVAL_ARGS+=(
+        --wandb_project "$WANDB_PROJECT"
+        --wandb_group "$WANDB_GROUP"
+        --wandb_tags "$WANDB_TAGS"
+    )
+    if [[ -n "${WANDB_ENTITY:-}" ]]; then
+        EVAL_ARGS+=(--wandb_entity "$WANDB_ENTITY")
+    fi
+fi
 
 echo "[run_eval_8b_tinker_all_0_200_thinking] BASE_MODEL=$BASE_MODEL"
 echo "[run_eval_8b_tinker_all_0_200_thinking] OUT=$OUT"
 echo "[run_eval_8b_tinker_all_0_200_thinking] mode=thinking dataset=$DATASET val_n=$VAL_N steps=${STEP_LIST}"
 echo "[run_eval_8b_tinker_all_0_200_thinking] divergences=${DIVERGENCES}"
+echo "[run_eval_8b_tinker_all_0_200_thinking] WANDB_PROJECT=${WANDB_PROJECT:-disabled}"
 
 BASE_DONE=0
 for step in "${STEPS[@]}"; do
@@ -103,7 +117,10 @@ for step in "${STEPS[@]}"; do
         if [[ "$BASE_DONE" == "0" ]]; then
             echo "[run_eval_8b_tinker_all_0_200_thinking] evaluating shared base model as step 0"
             NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" python evaluate_math.py \
-                "${EVAL_ARGS[@]}"
+                "${EVAL_ARGS[@]}" \
+                --wandb_step 0 \
+                --wandb_divergence base \
+                --wandb_run_name "eval_qwen38b_tinker_base_${DATASET}_thinking"
             BASE_DONE=1
         fi
         continue
@@ -127,6 +144,9 @@ for step in "${STEPS[@]}"; do
         echo "[run_eval_8b_tinker_all_0_200_thinking] evaluating divergence_type=$div checkpoint-$step"
         NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" python evaluate_math.py \
             "${EVAL_ARGS[@]}" \
-            --checkpoint_dir "$checkpoint_dir"
+            --checkpoint_dir "$checkpoint_dir" \
+            --wandb_step "$step" \
+            --wandb_divergence "$div" \
+            --wandb_run_name "eval_${run_config}_checkpoint-${step}_${DATASET}_thinking"
     done
 done

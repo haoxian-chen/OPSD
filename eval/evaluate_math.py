@@ -1,8 +1,10 @@
-import torch
 import argparse
 import json
+import os
 import re
 from pathlib import Path
+
+import torch
 from datasets import load_dataset
 from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
@@ -10,6 +12,100 @@ from tqdm import tqdm
 
 # Use math_verify package directly
 from math_verify import parse, verify
+
+
+def get_checkpoint_metadata(checkpoint_dir: str | None) -> tuple[str, int | None, str | None]:
+    """Return checkpoint name, numeric step, and parent run name for logging."""
+    if checkpoint_dir is None:
+        return "base", 0, None
+
+    checkpoint_path = Path(checkpoint_dir)
+    checkpoint_name = checkpoint_path.name
+    match = re.search(r"checkpoint-(\d+)$", checkpoint_name)
+    checkpoint_step = int(match.group(1)) if match else None
+    return checkpoint_name, checkpoint_step, checkpoint_path.parent.name
+
+
+def log_summary_to_wandb(args, summary: dict):
+    if not args.wandb_project:
+        return
+
+    try:
+        import wandb
+    except ImportError:
+        print("Warning: wandb is not installed; skipping W&B summary upload.")
+        return
+
+    checkpoint_name, inferred_step, run_config = get_checkpoint_metadata(args.checkpoint_dir)
+    wandb_step = args.wandb_step if args.wandb_step is not None else inferred_step
+    tags = [tag.strip() for tag in (args.wandb_tags or "").split(",") if tag.strip()] or None
+    run_name = args.wandb_run_name
+    if run_name is None:
+        mode = "thinking" if args.enable_thinking else "nonthinking"
+        parts = ["eval", args.dataset, Path(args.base_model).name]
+        if args.wandb_divergence:
+            parts.append(args.wandb_divergence)
+        elif run_config:
+            parts.append(run_config)
+        parts += [checkpoint_name, mode, f"valn{args.val_n}"]
+        run_name = "_".join(parts)
+
+    config = {
+        "base_model": args.base_model,
+        "checkpoint_dir": args.checkpoint_dir,
+        "checkpoint_name": checkpoint_name,
+        "checkpoint_step": wandb_step,
+        "checkpoint_parent": run_config,
+        "divergence_type": args.wandb_divergence,
+        "dataset": args.dataset,
+        "enable_thinking": args.enable_thinking,
+        "temperature": args.temperature,
+        "top_p": args.top_p,
+        "top_k": args.top_k,
+        "min_p": args.min_p,
+        "presence_penalty": args.presence_penalty,
+        "max_new_tokens": args.max_new_tokens,
+        "val_n": args.val_n,
+        "num_samples": args.num_samples,
+        "tensor_parallel_size": args.tensor_parallel_size,
+        "gpu_memory_utilization": args.gpu_memory_utilization,
+        "output_file": args.output_file,
+    }
+
+    metrics = {
+        "eval/average_at_n_pct": summary["average_at_n_pct"],
+        "eval/pass_at_n_pct": summary["pass_at_n_pct"],
+        "eval/majority_vote_at_n_pct": summary["majority_vote_at_n_pct"],
+        "eval/format_rate": summary["format_rate"],
+        "eval/average_at_n": summary["average_at_n"],
+        "eval/pass_at_n": summary["pass_at_n"],
+        "eval/majority_vote_at_n": summary["majority_vote_at_n"],
+        "eval/formatted_count": summary["formatted_count"],
+        "eval/num_problems": summary["num_problems"],
+        "eval/total_solutions": summary["total_solutions"],
+    }
+    if wandb_step is not None:
+        metrics["eval/checkpoint_step"] = wandb_step
+
+    try:
+        run = wandb.init(
+            entity=args.wandb_entity or None,
+            project=args.wandb_project,
+            name=run_name,
+            group=args.wandb_group or None,
+            tags=tags,
+            job_type="eval",
+            config=config,
+        )
+        if wandb_step is None:
+            run.log(metrics)
+        else:
+            run.log(metrics, step=wandb_step)
+        run.summary.update(metrics)
+        run.finish()
+        print(f"Uploaded evaluation summary to W&B project: {args.wandb_project}")
+    except Exception as e:
+        print(f"Warning: failed to upload evaluation summary to W&B: {e}")
 
 
 def extract_boxed_answer(text: str) -> str:
@@ -510,41 +606,41 @@ def evaluate_math500(
     print(f"  Format rate: {format_rate:.2f}%")
     print("=" * 70)
 
+    summary = {
+        "base_model": base_model_name,
+        "dataset": dataset_name,
+        "enable_thinking": enable_thinking,
+        "temperature": temperature,
+        "top_p": top_p,
+        "top_k": top_k,
+        "min_p": min_p,
+        "presence_penalty": presence_penalty,
+        "max_new_tokens": max_new_tokens,
+        "val_n": val_n,
+        "num_problems": num_problems,
+        "total_solutions": total,
+        "pass_at_n": pass_at_n,
+        "pass_at_n_pct": pass_at_n_pct,
+        "average_at_n": total_correct_per_problem,
+        "average_at_n_pct": average_at_n_pct,
+        "majority_vote_at_n": majority_vote_correct_count,
+        "majority_vote_at_n_pct": majority_vote_at_n_pct,
+        "formatted_count": formatted_count,
+        "format_rate": format_rate,
+        "results": results,
+    }
+
     # Save detailed results if output file specified
     if output_file:
         output_path = Path(output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        summary = {
-            "base_model": base_model_name,
-            "dataset": dataset_name,
-            "enable_thinking": enable_thinking,
-            "temperature": temperature,
-            "top_p": top_p,
-            "top_k": top_k,
-            "min_p": min_p,
-            "presence_penalty": presence_penalty,
-            "max_new_tokens": max_new_tokens,
-            "val_n": val_n,
-            "num_problems": num_problems,
-            "total_solutions": total,
-            "pass_at_n": pass_at_n,
-            "pass_at_n_pct": pass_at_n_pct,
-            "average_at_n": total_correct_per_problem,
-            "average_at_n_pct": average_at_n_pct,
-            "majority_vote_at_n": majority_vote_correct_count,
-            "majority_vote_at_n_pct": majority_vote_at_n_pct,
-            "formatted_count": formatted_count,
-            "format_rate": format_rate,
-            "results": results,
-        }
 
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
 
         print(f"\nDetailed results saved to: {output_file}")
 
-    return average_at_n_pct, results
+    return average_at_n_pct, results, summary
 
 
 def main():
@@ -631,6 +727,48 @@ def main():
     )
     parser.add_argument(
         "--val_n", type=int, default=6, help="Number of solutions to sample per problem (default: 6)"
+    )
+    parser.add_argument(
+        "--wandb_project",
+        type=str,
+        default=os.environ.get("WANDB_PROJECT"),
+        help="W&B project for uploading summary metrics. If omitted, W&B logging is disabled.",
+    )
+    parser.add_argument(
+        "--wandb_entity",
+        type=str,
+        default=os.environ.get("WANDB_ENTITY"),
+        help="Optional W&B entity/team for summary metric upload.",
+    )
+    parser.add_argument(
+        "--wandb_group",
+        type=str,
+        default=None,
+        help="Optional W&B group name for grouping multiple checkpoint eval runs.",
+    )
+    parser.add_argument(
+        "--wandb_run_name",
+        type=str,
+        default=None,
+        help="Optional W&B run name. Defaults to a name derived from model/dataset/checkpoint.",
+    )
+    parser.add_argument(
+        "--wandb_tags",
+        type=str,
+        default=None,
+        help="Optional comma-separated W&B tags.",
+    )
+    parser.add_argument(
+        "--wandb_step",
+        type=int,
+        default=None,
+        help="Optional W&B step value, usually the checkpoint step.",
+    )
+    parser.add_argument(
+        "--wandb_divergence",
+        type=str,
+        default=None,
+        help="Optional divergence type metadata for W&B config/run naming.",
     )
 
     args = parser.parse_args()
@@ -735,7 +873,7 @@ def main():
             print("Continuing without LoRA.")
 
     # Run evaluation
-    average_at_n_pct, results = evaluate_math500(
+    average_at_n_pct, results, summary = evaluate_math500(
         llm,
         tokenizer,
         max_new_tokens=args.max_new_tokens,
@@ -752,6 +890,7 @@ def main():
         enable_thinking=args.enable_thinking,
         val_n=args.val_n,
     )
+    log_summary_to_wandb(args, summary)
 
     print("\n" + "=" * 70)
     print("EVALUATION COMPLETE!")

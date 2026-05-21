@@ -39,6 +39,9 @@ CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
 TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-4}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.9}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-38912}"
+WANDB_PROJECT="${WANDB_PROJECT-OPSD}"
+WANDB_GROUP="${WANDB_GROUP:-eval_qwen31b_hkaift_${DIV}_${DATASET}_thinking}"
+WANDB_TAGS="${WANDB_TAGS:-eval,1b,hkaift,thinking}"
 
 if [[ "$OUT" == "$RUN_CONFIG" || "$OUT" == */"$RUN_CONFIG" ]]; then
     EXP_DIR="$OUT"
@@ -102,14 +105,30 @@ fi
 if [[ -n "${PRESENCE_PENALTY:-}" ]]; then
     EVAL_ARGS+=(--presence_penalty "$PRESENCE_PENALTY")
 fi
+if [[ -n "${WANDB_PROJECT:-}" ]]; then
+    EVAL_ARGS+=(
+        --wandb_project "$WANDB_PROJECT"
+        --wandb_group "$WANDB_GROUP"
+        --wandb_tags "$WANDB_TAGS"
+        --wandb_divergence "$DIV"
+    )
+    if [[ -n "${WANDB_ENTITY:-}" ]]; then
+        EVAL_ARGS+=(--wandb_entity "$WANDB_ENTITY")
+    fi
+fi
 
 echo "[run_eval_1b_hkaift_100_200_300_thinking] BASE_MODEL=$BASE_MODEL"
 echo "[run_eval_1b_hkaift_100_200_300_thinking] EXP_DIR=$EXP_DIR"
 echo "[run_eval_1b_hkaift_100_200_300_thinking] mode=thinking dataset=$DATASET val_n=$VAL_N steps=${STEP_LIST}"
+echo "[run_eval_1b_hkaift_100_200_300_thinking] WANDB_PROJECT=${WANDB_PROJECT:-disabled}"
 
 for checkpoint_dir in "${CHECKPOINTS[@]}"; do
+    checkpoint_name="$(basename "$checkpoint_dir")"
+    checkpoint_step="${checkpoint_name#checkpoint-}"
     echo "[run_eval_1b_hkaift_100_200_300_thinking] evaluating $checkpoint_dir"
     NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" python evaluate_math.py \
         "${EVAL_ARGS[@]}" \
-        --checkpoint_dir "$checkpoint_dir"
+        --checkpoint_dir "$checkpoint_dir" \
+        --wandb_step "$checkpoint_step" \
+        --wandb_run_name "eval_${RUN_CONFIG}_${checkpoint_name}_${DATASET}_thinking"
 done
