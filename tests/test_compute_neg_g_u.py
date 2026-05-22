@@ -14,6 +14,8 @@ from opsd_losses import DIVERGENCE_TYPES, _LOG2, _compute_neg_g_u
 
 LOG2_REF = math.log(2.0)
 NON_REVERSE_TYPES = tuple(t for t in DIVERGENCE_TYPES if t != "reverse_kl")
+ZERO_AT_MATCH_TYPES = ("reverse_kl", "forward_kl", "jsd", "improved_jsd")
+EXP_USING_TYPES = ("forward_kl", "jsd", "improved_forward_kl", "improved_jsd")
 
 
 # --- Test 1: shape preservation ----------------------------------------------
@@ -24,13 +26,25 @@ def test_shape_preserved(name: str) -> None:
     assert out.shape == log_u.shape
 
 
-# --- Test 2: zero-at-match ---------------------------------------------------
-@pytest.mark.parametrize("name", DIVERGENCE_TYPES)
+# --- Test 2: behavior at match ----------------------------------------------
+@pytest.mark.parametrize("name", ZERO_AT_MATCH_TYPES)
 def test_zero_at_match(name: str) -> None:
-    """A = -g(u) must vanish when u = 1 (student matches teacher)."""
+    """A = -g(u) vanishes at u = 1 for the zero-shifted variants."""
     log_u = torch.zeros(3, 5)
     out = _compute_neg_g_u(log_u, name)
     assert torch.allclose(out, torch.zeros_like(out), atol=1e-6)
+
+
+def test_improved_forward_kl_match_value() -> None:
+    log_u = torch.zeros(3, 5)
+    out = _compute_neg_g_u(log_u, "improved_forward_kl")
+    assert torch.allclose(out, torch.ones_like(out), atol=1e-6)
+
+
+def test_improved_reverse_kl_match_value() -> None:
+    log_u = torch.zeros(3, 5)
+    out = _compute_neg_g_u(log_u, "improved_reverse_kl")
+    assert torch.allclose(out, -torch.ones_like(out), atol=1e-6)
 
 
 # --- Test 3: reverse_kl is identity (bit-exact, no dtype change) ------------
@@ -50,11 +64,19 @@ def test_reverse_kl_bf16_returns_input_unchanged() -> None:
 
 
 # --- Test 4: improved-variant exact-PG algebra -------------------------------
-def test_improved_forward_kl_matches_exp_minus_one() -> None:
-    """A = u - 1 = exp(log_u) - 1 (no clamp triggered)."""
+def test_improved_forward_kl_matches_exp() -> None:
+    """A = u = exp(log_u) (no clamp triggered)."""
     log_u = torch.tensor([-1.0, -0.5, 0.0, 0.5, 1.5], dtype=torch.float32)
     out = _compute_neg_g_u(log_u, "improved_forward_kl")
-    expected = torch.exp(log_u) - 1.0
+    expected = torch.exp(log_u)
+    torch.testing.assert_close(out, expected, atol=1e-6, rtol=1e-6)
+
+
+def test_improved_reverse_kl_matches_log_u_minus_one() -> None:
+    """A = log_u - 1 (unclamped)."""
+    log_u = torch.tensor([-1.0, -0.5, 0.0, 0.5, 1.5], dtype=torch.float32)
+    out = _compute_neg_g_u(log_u, "improved_reverse_kl")
+    expected = log_u - 1.0
     torch.testing.assert_close(out, expected, atol=1e-6, rtol=1e-6)
 
 
@@ -112,7 +134,7 @@ def test_non_reverse_bf16_input_matches_fp32_reference(name: str) -> None:
 
 
 # --- Test 6: clamping --------------------------------------------------------
-@pytest.mark.parametrize("name", NON_REVERSE_TYPES)
+@pytest.mark.parametrize("name", EXP_USING_TYPES)
 def test_clamping_at_extreme_log_u(name: str) -> None:
     """At log_u = 20 (outside [-10, 10]), helper uses log_u_clamped = 10."""
     log_u_extreme = torch.tensor([20.0], dtype=torch.float32)
@@ -124,7 +146,7 @@ def test_clamping_at_extreme_log_u(name: str) -> None:
     torch.testing.assert_close(out_extreme, out_at_clamp, atol=1e-6, rtol=1e-6)
 
 
-@pytest.mark.parametrize("name", NON_REVERSE_TYPES)
+@pytest.mark.parametrize("name", EXP_USING_TYPES)
 def test_clamping_at_extreme_negative_log_u(name: str) -> None:
     log_u_extreme = torch.tensor([-20.0], dtype=torch.float32)
     log_u_at_clamp = torch.tensor([-10.0], dtype=torch.float32)
@@ -133,6 +155,12 @@ def test_clamping_at_extreme_negative_log_u(name: str) -> None:
     out_at_clamp = _compute_neg_g_u(log_u_at_clamp, name)
 
     torch.testing.assert_close(out_extreme, out_at_clamp, atol=1e-6, rtol=1e-6)
+
+
+def test_improved_reverse_kl_is_unclamped() -> None:
+    log_u = torch.tensor([20.0, -20.0], dtype=torch.float32)
+    out = _compute_neg_g_u(log_u, "improved_reverse_kl")
+    torch.testing.assert_close(out, torch.tensor([19.0, -21.0]))
 
 
 # --- Test 7: validator -------------------------------------------------------

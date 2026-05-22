@@ -1,15 +1,16 @@
 # OPSD Replication Commands
 
 Commands to replicate OPSD on **Qwen3-1.7B** with the Tinker-style sampled-token
-loss for all 5 f-divergences:
+loss for all 6 f-divergences:
 
 1. `reverse_kl` — original (bit-exact with prior implementation)
 2. `forward_kl`
 3. `jsd`
 4. `improved_forward_kl` — bias-corrected exact-PG variant
-5. `improved_jsd` — bias-corrected exact-PG variant
+5. `improved_reverse_kl` — bias-corrected exact-PG variant
+6. `improved_jsd` — bias-corrected exact-PG variant
 
-All 5 variants share the same hyper-parameters; they differ only in
+All 6 variants share the same hyper-parameters; they differ only in
 `--divergence_type` and `--run_config`. We expose them through parameterized scripts:
 
 | Script | Model | Mode | Notes |
@@ -68,7 +69,7 @@ Pass criteria:
 
 ---
 
-## 2. Full training — all 5 divergences
+## 2. Full training — all 6 divergences
 
 Each run takes ~15 min on 4×H100, saves checkpoints at steps 25/50/75/100.
 
@@ -77,6 +78,7 @@ bash scripts/run_opsd_1b_hkaift.sh reverse_kl
 bash scripts/run_opsd_1b_hkaift.sh forward_kl
 bash scripts/run_opsd_1b_hkaift.sh jsd
 bash scripts/run_opsd_1b_hkaift.sh improved_forward_kl
+bash scripts/run_opsd_1b_hkaift.sh improved_reverse_kl
 bash scripts/run_opsd_1b_hkaift.sh improved_jsd
 ```
 
@@ -84,7 +86,7 @@ Run them serially in `tmux`/`screen` so they survive SSH disconnects:
 
 ```bash
 tmux new -s opsd
-for div in reverse_kl forward_kl jsd improved_forward_kl improved_jsd; do
+for div in reverse_kl forward_kl jsd improved_forward_kl improved_reverse_kl improved_jsd; do
     bash scripts/run_opsd_1b_tinker.sh $div
 done
 # Ctrl+B then D to detach; `tmux attach -t opsd` to reattach
@@ -110,7 +112,7 @@ NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES=0,1,2,3 python evaluate_math.py \
     --tensor_parallel_size 4
 
 # Each variant × checkpoint × dataset
-for variant in reverse_kl forward_kl jsd improved_forward_kl improved_jsd; do
+for variant in reverse_kl forward_kl jsd improved_forward_kl improved_reverse_kl improved_jsd; do
     EXP_DIR=$OUT/qwen31b_tinker_${variant}
     for step in 25 50 75 100; do
         for ds in aime24 aime25 hmmt25; do

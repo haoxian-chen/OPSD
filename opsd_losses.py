@@ -19,6 +19,7 @@ DIVERGENCE_TYPES = (
     "jsd",
     "improved_reverse_kl",
     "improved_forward_kl",
+    "improved_reverse_kl",
     "improved_jsd",
 )
 _LOG2 = math.log(2.0)
@@ -40,7 +41,7 @@ def _compute_neg_g_u(log_u: torch.Tensor, divergence_type: str) -> torch.Tensor:
     if divergence_type == "reverse_kl":
         return log_u
     if divergence_type == "improved_reverse_kl":
-        return log_u - 1.0  
+        return log_u - 1.0
 
     log_u_clamped = torch.clamp(log_u.float(), min=-10.0, max=10.0)
     u = torch.exp(log_u_clamped)
@@ -51,7 +52,7 @@ def _compute_neg_g_u(log_u: torch.Tensor, divergence_type: str) -> torch.Tensor:
         return -0.5 * (u * log_u_clamped - (u + 1.0) * (torch.log1p(u) - _LOG2))
 
     if divergence_type == "improved_forward_kl":
-        return u - 1.0
+        return u
     if divergence_type == "improved_jsd":
         return 0.5 * (torch.log1p(u) - _LOG2)
     raise ValueError(
@@ -77,15 +78,11 @@ def _tinker_loss_from_logprobs(
         (loss, metrics) where metrics is a dict of scalar floats:
           - teacher_kl: mean(-log_u) over masked tokens (k1 reverse-KL estimator,
             independent of divergence_type, for dashboard back-compat).
-          - teacher_pg_signal_mean/{type}: signed mean of A (diagnostic; cancels
-            by construction for improved_forward_kl).
+          - teacher_pg_signal_mean/{type}: signed mean of A (diagnostic).
           - teacher_pg_signal_abs_mean/{type}: mean(|A|) -- the real magnitude.
           - teacher_pg_signal_std/{type}: std(A) -- PG variance.
-          - teacher_div_f/{type}: mean(g(u)) -- only emitted for forward_kl and
-            jsd, where g IS the f-divergence generator and the mean is a genuine
-            MC estimate of the divergence value. Skipped for the improved
-            variants (where g is a PG control-variate form, not a divergence
-            integrand) and for reverse_kl (already covered by teacher_kl).
+          - teacher_div/{type}: mean(g(u)) for the selected divergence, matching
+            the Tinker implementation. Since A = -g(u), this is -mean(A).
     """
     if divergence_type not in DIVERGENCE_TYPES:
         raise ValueError(
@@ -116,15 +113,6 @@ def _tinker_loss_from_logprobs(
         metrics[f"teacher_pg_signal_abs_mean/{divergence_type}"] = adv_f32.abs().mean().item()
         if adv_f32.numel() > 1:
             metrics[f"teacher_pg_signal_std/{divergence_type}"] = adv_f32.std().item()
-
-        if divergence_type in ("forward_kl", "jsd"):
-            log_u_f32 = log_u_masked.float()
-            log_u_clamped = torch.clamp(log_u_f32, min=-10.0, max=10.0)
-            u = torch.exp(log_u_clamped)
-            if divergence_type == "forward_kl":
-                f_u = u * log_u_clamped
-            else:
-                f_u = 0.5 * (u * log_u_clamped - (u + 1.0) * (torch.log1p(u) - _LOG2))
-            metrics[f"teacher_div_f/{divergence_type}"] = f_u.mean().item()
+        metrics[f"teacher_div/{divergence_type}"] = (-adv_f32).mean().item()
 
     return loss, metrics

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Run OPSD on Qwen3-1.7B with the Tinker-style sampled-token loss for any of
-# the 5 supported f-divergences.
+# the 6 supported f-divergences.
 #
 # Usage:
 #   bash scripts/run_opsd_1b_tinker.sh <divergence_type> [--smoke]
 #
-#   divergence_type: reverse_kl | forward_kl | jsd | improved_forward_kl | improved_jsd
+#   divergence_type: reverse_kl | forward_kl | jsd | improved_forward_kl | improved_reverse_kl | improved_jsd
 #   --smoke: short run for pipeline validation (max_steps=4, save_steps=2,
 #            max_completion_length=256, run_config prefix "smoke_")
 #

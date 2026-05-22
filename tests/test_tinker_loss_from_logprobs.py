@@ -134,37 +134,23 @@ def test_metric_keys_match_divergence_type(fixed_batch, name: str) -> None:
     assert f"teacher_pg_signal_abs_mean/{name}" in metrics
     assert f"teacher_pg_signal_std/{name}" in metrics
 
-    # teacher_div_f/* is only emitted for variants where g IS the divergence
-    # generator (forward_kl, jsd). Skipped for reverse_kl (covered by
-    # teacher_kl) and the improved variants (g is not a divergence integrand).
-    if name in ("forward_kl", "jsd"):
-        assert f"teacher_div_f/{name}" in metrics
-    else:
-        assert f"teacher_div_f/{name}" not in metrics
+    # teacher_div/* mirrors the Tinker metric: mean(g(u)) for the active
+    # divergence. Since A = -g(u), this is -mean(A).
+    assert f"teacher_div/{name}" in metrics
 
 
-def test_improved_forward_kl_signed_mean_near_zero_on_uniform_random(fixed_batch) -> None:
-    """E_q[u - 1] = E_q[p/q] - 1 = 0 in expectation. Here we sample once so
-    finite-batch noise dominates, but the signed mean should still be a *much*
-    smaller magnitude than the abs_mean for improved_forward_kl. This guards
-    the documented "signed mean cancels by construction" claim.
-    """
+@pytest.mark.parametrize("name", DIVERGENCE_TYPES)
+def test_teacher_div_matches_negative_signal_mean(fixed_batch, name: str) -> None:
     student_logp, teacher_logp, labels = fixed_batch
     _, metrics = _tinker_loss_from_logprobs(
         student_log_probs_sampled=student_logp,
         teacher_log_probs_sampled=teacher_logp,
         shifted_labels=labels,
-        divergence_type="improved_forward_kl",
+        divergence_type=name,
     )
-    signed = metrics["teacher_pg_signal_mean/improved_forward_kl"]
-    abs_mean = metrics["teacher_pg_signal_abs_mean/improved_forward_kl"]
-    # Sanity: abs_mean is strictly positive (we aren't at convergence).
-    assert abs_mean > 0
-    # The signed mean is bounded above by the abs_mean by definition; the
-    # diagnostic value of this metric is that it tends to be much smaller.
-    # We don't assert a tight ratio (small batch makes that flaky); just the
-    # weaker inequality, plus a print-friendly note that the gap exists.
-    assert abs(signed) <= abs_mean + 1e-6
+    signed = metrics[f"teacher_pg_signal_mean/{name}"]
+    teacher_div = metrics[f"teacher_div/{name}"]
+    assert teacher_div == pytest.approx(-signed, rel=1e-6, abs=1e-6)
 
 
 def test_invalid_divergence_type_raises(fixed_batch) -> None:
