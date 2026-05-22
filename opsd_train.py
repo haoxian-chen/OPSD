@@ -37,8 +37,8 @@ class CustomScriptArguments(ScriptArguments):
         metadata={
             "help": "f-divergence used for the per-token advantage when use_tinker_loss=True. "
             "One of: reverse_kl (default, matches prior behavior), forward_kl, jsd, "
-            "improved_forward_kl, improved_jsd. The 'improved_*' variants are the "
-            "bias-corrected (exact-PG) versions of forward_kl and jsd. Ignored when "
+            "improved_forward_kl, improved_reverse_kl, improved_jsd. The 'improved_*' "
+            "variants are the bias-corrected (exact-PG) versions. Ignored when "
             "use_tinker_loss=False (the full-vocab generalized-JSD branch is "
             "controlled by `beta`, not divergence_type)."
         },

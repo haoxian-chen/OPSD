@@ -1,7 +1,7 @@
-# Add 4 New f-Divergence Per-Token Advantages to OPSD's Tinker-Style Loss
+# Add 5 New f-Divergence Per-Token Advantages to OPSD's Tinker-Style Loss
 
 Plan for extending the sampled-token (Thinking-Machines-style) loss in
-`opsd_trainer.py` so the per-token advantage can use 5 different f-divergences
+`opsd_trainer.py` so the per-token advantage can use 6 different f-divergences
 instead of only Reverse KL. Mirrors the design in
 `plans/add_divergences_implementation.md` (which targeted the `tinker_cookbook`
 package) but adapted to this repo's `OPSDTrainer.compute_loss`.
@@ -24,33 +24,37 @@ policy-gradient outer form.
 ## Math
 
 Let `log_u = log p_teacher − log q_student` (already scaled by `1/temperature`,
-see "Temperature" note below) and `u = exp(log_u)`. Five supported divergences:
+see "Temperature" note below) and `u = exp(log_u)`. Six supported divergences:
 
 | `divergence_type`     | `g(u)`                              | `-g(u)` used as advantage                        |
 | --------------------- | ----------------------------------- | ------------------------------------------------ |
 | `reverse_kl`          | `-ln u`                             | `log_u`                                          |
 | `forward_kl`          | `u ln u`                            | `-u * log_u`                                     |
 | `jsd`                 | `0.5 [u ln u - (1+u) ln((1+u)/2)]`  | `-0.5 * (u*log_u - (u+1)*(log1p(u) - log 2))`    |
-| `improved_forward_kl` | `1 - u`                             | `u - 1`                                          |
+| `improved_forward_kl` | `-u`                                | `u`                                              |
+| `improved_reverse_kl` | `-ln u + 1`                         | `log_u - 1`                                      |
 | `improved_jsd`        | `-0.5 ln((1+u)/2)`                  | `0.5 * (log1p(u) - log 2)`                       |
 
 > **Note on "`g(u)`" in this table.** Here `g` is just the symbol we wire into
 > the code so `-g(u)` is the per-token advantage. For `reverse_kl`,
-> `forward_kl`, `jsd`, `g` *is* the f-divergence generator (i.e.
-> `D_f(p‖q) = E_q[g(u)]`). For `improved_forward_kl` and `improved_jsd`, `g`
-> is *not* a divergence generator — it's the bias-corrected PG integrand
-> `(f − u f')` of forward KL / JSD respectively, packaged into the same slot.
-> See the policy-gradient section below for the algebra. This distinction
-> matters for the metric naming (you cannot just log `mean(g(u))` and call
-> it "the divergence" for the improved variants).
+> `forward_kl`, and `jsd`, `g` is the standard f-divergence generator. The
+> `improved_*` entries are the unshifted analytical score-function weights
+> used by the updated Tinker implementation.
 
 ### Behavior at `u = 1` (student matches teacher)
 
-`g(1) = 0` for all five entries above, so the per-token advantage `-g(u)`
-vanishes when student == teacher — once the student matches, there's no
-gradient signal. `improved_forward_kl` uses `g(u) = 1 - u` (rather than the
-zero-mean-equivalent `g(u) = -u`) precisely to get this zero-at-match
-property without changing the gradient up to baseline.
+`g(1)` is zero for `reverse_kl`, `forward_kl`, `jsd`, and `improved_jsd`, so
+their per-token advantage `-g(u)` vanishes when student == teacher. The two
+unshifted improved variants intentionally do not vanish at `u = 1`:
+
+| `divergence_type`     | `g(1)` | `-g(1)` (advantage at match) |
+| --------------------- | ------ | ---------------------------- |
+| `reverse_kl`          | 0      | 0                            |
+| `forward_kl`          | 0      | 0                            |
+| `jsd`                 | 0      | 0                            |
+| `improved_forward_kl` | -1     | 1                            |
+| `improved_reverse_kl` | 1      | -1                           |
+| `improved_jsd`        | 0      | 0                            |
 
 ### Policy-gradient interpretation
 
@@ -62,29 +66,27 @@ score-function gradient under sampling from `q_student` is
 ∇θ D_f(p_teacher || q_θ) = E_{q_θ}[(f(u) − u f'(u)) · ∇θ log q_θ],
 ```
 
-so the *exact* per-token advantage is `A_exact = -(f − u f')` (any constant
-baseline can be added, since `E_{q_θ}[c · ∇θ log q_θ] = 0`). The five options
-split cleanly into "exact PG" and "biased MC-of-integrand":
+so the *exact* per-token advantage is `A_exact = -(f − u f')` (constant
+baselines are gradient-neutral in expectation). The six options split into
+"exact PG" and "biased MC-of-integrand":
 
 | `divergence_type`     | Per-token A used here                 | Target D_f          | Status                                                  |
 | --------------------- | ------------------------------------- | ------------------- | ------------------------------------------------------- |
 | `reverse_kl`          | `log u`                               | `D_KL(q‖p)`         | **Exact PG** (matches `-(f − u f') = log u − 1` up to baseline `+1`) |
-| `improved_forward_kl` | `u − 1`                               | `D_KL(p‖q)`         | **Exact PG** for forward KL `f(u) = u log u` (matches `-(f − u f') = u` minus baseline `1`) |
+| `improved_forward_kl` | `u`                                   | `D_KL(p‖q)`         | **Exact PG** for forward KL `f(u) = u log u`             |
+| `improved_reverse_kl` | `log u − 1`                           | `D_KL(q‖p)`         | **Exact PG** for reverse KL without the `+1` baseline    |
 | `improved_jsd`        | `0.5 (log1p(u) − log 2)`              | `D_JSD(p, q)`       | **Exact PG** for JSD `f` (algebra: `f − u f' = -0.5 log((1+u)/2)`) |
 | `forward_kl`          | `-u log u`                            | `D_KL(p‖q)`         | **Biased**: uses `-f(u)` (the integrand of `D_f = E_q[f]`) rather than `-(f − u f')`. |
 | `jsd`                 | `-0.5 (u log u − (1+u)(log1p(u) − log 2))` | `D_JSD(p, q)` | **Biased**: same `-f(u)` substitution as above.        |
 
-In other words, the `improved_*` names are *exactly* the bias-corrected
-forward-KL and JSD score-function gradients (up to a zero-mean baseline); the
-unprefixed `forward_kl` and `jsd` are the looser "MC the divergence integrand"
-estimators we inherit from the `tinker_cookbook` convention. `reverse_kl`
-happens to coincide for both definitions because the IS factor `u` does not
-appear in its f-generator (`f(u) = -log u`).
+In other words, the `improved_*` names are the analytical score-function
+weights; the unprefixed `forward_kl` and `jsd` are the looser "MC the divergence
+integrand" estimators inherited from the Tinker convention.
 
-This matters for users tuning: prefer `improved_forward_kl` / `improved_jsd`
-when you want the unbiased PG; keep `forward_kl` / `jsd` if you want
-parity with the tinker recipe. The docstring on `divergence_type` should
-state this explicitly.
+This matters for users tuning: prefer `improved_forward_kl`,
+`improved_reverse_kl`, or `improved_jsd` when you want the analytical PG
+weights; keep `forward_kl` / `jsd` if you want the direct `-g(u)` integrand
+signal.
 
 ## Numerical stability (same strategy as tinker plan, with one OPSD-specific addition)
 
@@ -94,8 +96,7 @@ state this explicitly.
   is computed from `F.log_softmax` outputs of a bf16/fp16 model and inherits
   that dtype. `exp`, `log1p`, and `u * log_u` on bf16 lose precision fast in
   the tails (bf16 mantissa is 7 bits). Cast at the helper boundary:
-  `log_u = log_u.float()` before any `exp`/`log1p` op for the four
-  non-`reverse_kl` variants. Skip the cast for `reverse_kl` so it stays
+  `log_u = log_u.float()` for the five non-`reverse_kl` variants. Skip the cast for `reverse_kl` so it stays
   bit-exact with the prior code.
 - **Compute `log_u` first** in log-space (subtraction of log-probs), then
   `u = exp(log_u_clamped)`.
@@ -103,9 +104,9 @@ state this explicitly.
   mismatch (`log_u = 30`) gives `u ≈ 1e13` and `u·log_u` saturates to Inf.
   Clamp keeps `u ∈ [4.5e-5, 22026]`, all safe in fp32.
 - **Use `torch.log1p(u)`** for the `ln((1+u)/2)` terms in JSD variants.
-- **`reverse_kl` left unclamped** so behavior remains bit-exact with the
-  current code (which doesn't `exp` `log_u`).
-- For the four non-reverse-KL variants, the implementation will use the
+- **`reverse_kl` and `improved_reverse_kl` are left unclamped** because neither
+  uses `exp`; `reverse_kl` also remains bit-exact with the current code.
+- For the four exp-using variants, the implementation will use the
   **clamped** `log_u` in the multiplicative slots as well (i.e.
   `-u * log_u_clamped`, not `-u * log_u`). This is the "clipped estimator"
   consistency choice from the tinker plan; flagged here too for parity.
@@ -143,6 +144,7 @@ DIVERGENCE_TYPES = (
     "forward_kl",
     "jsd",
     "improved_forward_kl",
+    "improved_reverse_kl",
     "improved_jsd",
 )
 _LOG2 = math.log(2.0)
@@ -161,6 +163,8 @@ def _compute_neg_g_u(log_u: torch.Tensor, divergence_type: str) -> torch.Tensor:
     if divergence_type == "reverse_kl":
         # Bit-exact with the prior implementation; no dtype cast.
         return log_u
+    if divergence_type == "improved_reverse_kl":
+        return log_u.float() - 1.0
 
     # Upcast for the exp/log1p/multiplication ops below. OPSD log_u may be
     # bf16/fp16, where the tails of u·log_u lose precision fast. We do NOT
@@ -177,7 +181,7 @@ def _compute_neg_g_u(log_u: torch.Tensor, divergence_type: str) -> torch.Tensor:
     if divergence_type == "jsd":
         return -0.5 * (u * log_u_clamped - (u + 1.0) * (torch.log1p(u) - _LOG2))
     if divergence_type == "improved_forward_kl":
-        return u - 1.0
+        return u
     if divergence_type == "improved_jsd":
         return 0.5 * (torch.log1p(u) - _LOG2)
     raise ValueError(
@@ -187,7 +191,7 @@ def _compute_neg_g_u(log_u: torch.Tensor, divergence_type: str) -> torch.Tensor:
 ```
 
 > **Dtype contract.** For `reverse_kl`, the helper returns `log_u` unchanged
-> (matches the caller's dtype, bit-exact). For the other four, it returns a
+> (matches the caller's dtype, bit-exact). For the other five, it returns a
 > **fp32** tensor regardless of input dtype. The caller in `compute_loss`
 > doesn't need to do anything — `(advantage_fp32 * student_log_probs_bf16)`
 > promotes to fp32 in eager mode, the `.mean()` is fp32, and gradients flow
@@ -272,14 +276,8 @@ Keep `log_u_masked` around so we can log:
 - **`teacher_kl`** — back-compat dashboard metric. `mean(-log_u)` over
   masked tokens, the k1 reverse-KL estimator. **Always logged**, regardless
   of the active `divergence_type` (so existing dashboards keep working).
-- **`teacher_pg_signal_mean/{divergence_type}`** — *signed* mean of
-  `A = -g(u)` over masked tokens. Useful as a diagnostic, **not** as a
-  magnitude. By construction the signed mean cancels out for
-  `improved_forward_kl` (`E_q[u − 1] ≡ 0`, this is the zero-mean baseline
-  that makes it the exact PG); for `improved_jsd` it concentrates near 0
-  near convergence; for `forward_kl` and `jsd` it's a (signed) MC estimate
-  of `-D_f`. Read this as "is my baseline behaving" rather than "how big
-  is my update."
+- **`teacher_pg_signal_mean/{divergence_type}`** — signed mean of
+  `A = -g(u)` over masked tokens. Useful as a diagnostic, not as a magnitude.
 - **`teacher_pg_signal_abs_mean/{divergence_type}`** — `mean(|A|)` over
   masked tokens. This is the actual per-token signal *magnitude*. Won't
   cancel and is meaningful for every divergence type. Use this on
@@ -287,20 +285,14 @@ Keep `log_u_masked` around so we can log:
 - **`teacher_pg_signal_std/{divergence_type}`** — `std(A)` over masked
   tokens. The PG variance contribution; useful for spotting blown-up
   updates from extreme `u` values escaping the clamp.
-- **`teacher_div_f/{divergence_type}`** — `mean(f(u))` over masked tokens.
-  Only logged for the variants where this is a genuine MC estimator of the
-  divergence: `reverse_kl` → `mean(-log_u)` = D_KL(q‖p) (already covered
-  by `teacher_kl`; skip to avoid duplication), `forward_kl` →
-  `mean(u log u)` = D_KL(p‖q), `jsd` →
-  `mean(0.5 (u log u − (1+u)(log1p u − log 2)))` = D_JSD. **Skip** for
-  `improved_forward_kl` and `improved_jsd` — their `g(u)` is not a
-  divergence integrand.
+- **`teacher_div/{divergence_type}`** — `mean(g(u))` over masked tokens for
+  the active divergence, matching the updated Tinker metric. Since the training
+  advantage is `A = -g(u)`, this is `-mean(A)`.
 
-So a JSD run logs `teacher_kl`, the three `teacher_pg_signal_{mean,abs_mean,std}/jsd`
-keys, and `teacher_div_f/jsd`; an `improved_jsd` run logs `teacher_kl` plus
-the three `teacher_pg_signal_*` keys (and skips `teacher_div_f/*`). Document
-all five metric semantics in the trainer docstring so dashboard readers don't
-conflate them.
+So every run logs `teacher_kl`, the three
+`teacher_pg_signal_{mean,abs_mean,std}/{divergence_type}` keys, and
+`teacher_div/{divergence_type}`. Document all metric semantics in the trainer
+docstring so dashboard readers do not conflate them.
 
 Add these to `self._metrics["train"]` (or wherever per-step metrics live).
 Check the existing logging pattern around the `_metrics` dict in `__init__`
@@ -318,7 +310,8 @@ divergence_type: str = field(
     metadata={
         "help": "f-divergence used for the per-token advantage when "
         "use_tinker_loss=True. One of: reverse_kl (default, matches prior "
-        "behavior), forward_kl, jsd, improved_forward_kl, improved_jsd. "
+        "behavior), forward_kl, jsd, improved_forward_kl, "
+        "improved_reverse_kl, improved_jsd. "
         "Ignored when use_tinker_loss=False (the full-vocab JSD branch is "
         "unaffected)."
     },
@@ -375,7 +368,7 @@ Programmatically:
 trainer = OPSDTrainer(
     ...,
     use_thinking_machines_loss=True,
-    divergence_type="forward_kl",  # or "jsd", "improved_forward_kl", "improved_jsd"
+    divergence_type="forward_kl",  # or "jsd", "improved_forward_kl", "improved_reverse_kl", "improved_jsd"
 )
 ```
 
@@ -388,32 +381,31 @@ absent) covering:
 
 1. **Shape preservation.** For each `name in DIVERGENCE_TYPES`,
    `_compute_neg_g_u(torch.randn(B, T), name).shape == (B, T)`.
-2. **Zero-at-match.** For each name, `_compute_neg_g_u(torch.zeros(B, T), name)`
-   is all zeros (within fp32 atol `1e-6`). Confirms the "no gradient when
-   student matches teacher" property documented above.
+2. **Behavior at match.** At `log_u = 0`, assert the zero-shifted variants
+   (`reverse_kl`, `forward_kl`, `jsd`, `improved_jsd`) return zero, while
+   `improved_forward_kl` returns `1` and `improved_reverse_kl` returns `-1`.
 3. **Reverse-KL bit-exactness.** `_compute_neg_g_u(log_u, "reverse_kl")` is
    `log_u` exactly (same tensor, no dtype change). Regression guard against
    any future refactor accidentally upcasting this path.
 4. **Improved-variant exact-PG sanity.** On a fixed `log_u` (no clamp
-   triggered), check `improved_forward_kl` equals `exp(log_u) − 1` and
-   `improved_jsd` equals `0.5 * (log1p(exp(log_u)) − log 2)` (i.e. the
-   formulas in the table) to a tight tolerance. Documents what "improved"
-   means and locks in the algebra.
+   triggered), check `improved_forward_kl` equals `exp(log_u)`,
+   `improved_reverse_kl` equals `log_u - 1`, and `improved_jsd` equals
+   `0.5 * (log1p(exp(log_u)) − log 2)` to a tight tolerance.
 5. **Dtype contract.** Pass a bf16 `log_u` (e.g.
    `torch.full((4,), 5.0, dtype=torch.bfloat16)`); assert:
    - `_compute_neg_g_u(log_u, "reverse_kl").dtype == torch.bfloat16` (returns
      the input tensor unchanged).
-   - For each of the four non-reverse names: returned dtype is `torch.float32`
+   - For each of the five non-reverse names: returned dtype is `torch.float32`
      (the helper deliberately does not downcast back to bf16 — see "Dtype
      contract" note in the helper section).
    - Values for the non-reverse variants match an fp32 reference computation
      to `atol=1e-5`, *much* tighter than what a bf16-roundtrip would allow
      (which is `~5e-2` for `u·log_u` at `log_u = 5`). This is the test that
      would fail if someone added a `.to(log_u.dtype)` on the way out.
-6. **Clamping.** At `log_u = 20.0`, the four non-reverse variants return the
+6. **Clamping.** At `log_u = 20.0`, the four exp-using variants return the
    value computed from `log_u_clamped = 10.0`, not from 20. Documents the
-   clipped-estimator behavior so future readers don't "fix" the clamp without
-   intent.
+   clipped-estimator behavior. `improved_reverse_kl` is tested separately as
+   unclamped.
 7. **Validator.** `_compute_neg_g_u(torch.zeros(4), "kl_divergence_typo")`
    raises `ValueError` mentioning `DIVERGENCE_TYPES`.
 
@@ -494,24 +486,25 @@ CI is out of scope.
   behave differently than with the current default `T`?
 - **Metric naming consistency between train/eval.** Decide whether
   the `teacher_pg_signal_{mean,abs_mean,std}/{type}` and
-  `teacher_div_f/{type}` keys should also be emitted in eval, not just train. The current trainer's `_metrics` dict
+  `teacher_div/{type}` keys should also be emitted in eval, not just train. The current trainer's `_metrics` dict
   has `"train"` and `"eval"` keys (see `opsd_trainer.py:274`); follow the
   existing pattern.
 
 ## Implementation status
 
-**Not started.** This is a forward-looking plan; no code edits yet. Next
-step: open a `feature/f-divergences` branch off `main` on the fork
-(`haoxian-chen/OPSD`) and implement in this order:
+Done in this OPSD tree. The current implementation follows the updated
+six-divergence Tinker formulas from `/Users/chenhaoxian/Distillation-v1`,
+including `improved_reverse_kl`, `improved_forward_kl = u`, and
+`teacher_div/{divergence_type}` metrics. Historical implementation order:
 
 1. Factor the post-forward arithmetic in `compute_loss` into a free function
    `_tinker_loss_from_logprobs(...)` (testability prerequisite for step 5).
 2. Add `_compute_neg_g_u` helper and `DIVERGENCE_TYPES` / `_LOG2` constants.
 3. Wire `divergence_type` through `OPSDTrainer.__init__` (validate, store,
    warn on `use_thinking_machines_loss=False` combo).
-4. Update `compute_loss` to call the new helper and log the five metrics
+4. Update `compute_loss` to call the new helper and log the metrics
    (`teacher_kl`, `teacher_pg_signal_{mean,abs_mean,std}/{type}`, and
-   `teacher_div_f/{type}` for the unprefixed variants only).
+   `teacher_div/{type}`).
 5. Add `pytest==8.3.4` to `environment.yml`'s pip block, create `tests/`
    directory, write `tests/test_compute_neg_g_u.py` (tests 1–7 above) and
    the loss regression test (test 8). Verify with `pytest tests/ -q`.

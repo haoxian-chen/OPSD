@@ -1,8 +1,8 @@
-# Add 4 New f-Divergence Advantage Types to On-Policy Distillation
+# Add 5 New f-Divergence Advantage Types to On-Policy Distillation
 
 Documents the refactor that extends `incorporate_kl_penalty` in
 `tinker_cookbook/distillation/train_on_policy.py` so the per-token distillation
-signal can use 5 different f-divergences instead of only Reverse KL.
+signal can use 6 different f-divergences instead of only Reverse KL.
 
 ## Goal
 
@@ -15,33 +15,41 @@ per-token contribution becomes `kl_penalty_coef * mask * (-g(u))`.
 ## Math
 
 Let `log_u = log p - log q = teacher_logprobs - sampled_logprobs` and
-`u = exp(log_u)`. Five supported divergences:
+`u = exp(log_u)`. Six supported divergences:
 
 | `divergence_type`     | `g(u)`                              | `-g(u)` used in code                              |
 | --------------------- | ----------------------------------- | ------------------------------------------------- |
 | `reverse_kl`          | `-ln u`                             | `log_u`                                           |
 | `forward_kl`          | `u ln u`                            | `-u * log_u`                                      |
 | `jsd`                 | `0.5 [u ln u - (1+u) ln((1+u)/2)]`  | `-0.5 * (u*log_u - (u+1)*(log1p(u) - log 2))`     |
-| `improved_forward_kl` | `1 - u`                             | `u - 1`                                           |
+| `improved_forward_kl` | `-u`                                | `u`                                               |
+| `improved_reverse_kl` | `-ln u + 1`                         | `log_u - 1`                                       |
 | `improved_jsd`        | `-0.5 ln((1+u)/2)`                  | `0.5 * (log1p(u) - log 2)`                        |
 
 ### Behavior at `u = 1` (student matches teacher)
 
-`g(1)` is zero for all five generators, so the per-token advantage
-contribution `-g(u)` vanishes when student == teacher:
+`g(1)` is zero for `reverse_kl`, `forward_kl`, `jsd`, and `improved_jsd`, so
+their per-token advantage `-g(u)` vanishes when student == teacher. The two
+"improved" variants `improved_forward_kl` and `improved_reverse_kl` use
+unshifted generators that are gradient-equivalent to their unshifted
+counterparts but do **not** vanish at `u = 1` — they contribute a constant
+bias term to the advantage instead.
 
 | `divergence_type`     | `g(1)` | `-g(1)` (advantage at match) |
 | --------------------- | ------ | ---------------------------- |
 | `reverse_kl`          | 0      | 0                            |
 | `forward_kl`          | 0      | 0                            |
 | `jsd`                 | 0      | 0                            |
-| `improved_forward_kl` | 0      | 0                            |
+| `improved_forward_kl` | -1     | 1                            |
+| `improved_reverse_kl` | 1      | -1                           |
 | `improved_jsd`        | 0      | 0                            |
 
-`improved_forward_kl` uses the baseline-shifted generator `g(u) = 1 - u`
-rather than the unshifted `g(u) = -u`. This keeps the gradient-equivalent
-f-divergence signal while making the per-token advantage exactly zero at
-`u = 1`.
+`improved_forward_kl` (`g(u) = -u`) and `improved_reverse_kl`
+(`g(u) = -ln u + 1`) are the unshifted, gradient-equivalent simplifications
+of `forward_kl` and `reverse_kl` respectively. A previous version of this
+plan baseline-shifted `improved_forward_kl` to `g(u) = 1 - u` to make
+`g(1) = 0`; that shift has been removed so that the per-token contribution
+matches the unshifted form used in the literature.
 
 ## Numerical stability
 
@@ -53,14 +61,18 @@ f-divergence signal while making the per-token advantage exactly zero at
   `u ∈ [4.5e-5, 22026]`, all representable in float32.
 - **Use `torch.log1p(u)`** instead of `torch.log(1 + u)` so the `ln((1+u)/2)`
   terms in the JSD variants stay accurate when `u` is small.
-- **Reverse KL is left unclamped** because it doesn't use `exp` — this
-  preserves bit-exact behavior with the previous implementation.
+- **Reverse KL and improved Reverse KL are left unclamped** because neither
+  uses `exp` — `-g(u)` is `log_u` and `log_u - 1` respectively. For
+  `reverse_kl` this preserves bit-exact behavior with the previous
+  implementation.
 
 ### Clipped-estimator note (important)
 
-For the four non-reverse-KL variants, the implementation uses the **clamped**
-`log_u` not only to compute `u = exp(...)` but **also** in the multiplicative
-terms (`u * log_u` in forward_kl and jsd). See `train_on_policy.py:85-92`:
+For the four `exp`-using variants (`forward_kl`, `jsd`,
+`improved_forward_kl`, `improved_jsd`), the implementation uses the
+**clamped** `log_u` not only to compute `u = exp(...)` but **also** in the
+multiplicative terms (`u * log_u` in forward_kl and jsd). See
+`train_on_policy.py:85-92`:
 
 ```python
 log_u_clamped = torch.clamp(log_u, min=-10.0, max=10.0)
@@ -86,7 +98,7 @@ through the unclamped path in unlucky edge cases.
 ### 1. `tinker_cookbook/distillation/train_on_policy.py`
 
 - Added `import math`.
-- Added module-level constant `DIVERGENCE_TYPES` (tuple of the 5 valid strings).
+- Added module-level constant `DIVERGENCE_TYPES` (tuple of the 6 valid strings).
 - Added private helper `_compute_neg_g_u(log_u, divergence_type) -> Tensor`
   that returns the per-token `-g(u)` for the selected divergence, applying
   the clamping/log1p strategy described above.
@@ -145,7 +157,7 @@ Programmatically:
 ```python
 config = train_on_policy.Config(
     ...,
-    divergence_type="forward_kl",   # or "jsd", "improved_forward_kl", "improved_jsd"
+    divergence_type="forward_kl",   # or "jsd", "improved_forward_kl", "improved_reverse_kl", "improved_jsd"
     kl_penalty_coef=1.0,
 )
 ```
@@ -157,8 +169,8 @@ config = train_on_policy.Config(
   to retune `kl_penalty_coef`.
 - No unit tests added in this pass. Recommended next steps:
   - Shape test: each divergence returns a tensor matching the input shape.
-  - Zero-at-match test: for all divergence types,
-    `_compute_neg_g_u(torch.zeros(...), name)` returns all zeros.
+  - Behavior-at-match test: at `log_u = 0`, zero-shifted variants return zero,
+    `improved_forward_kl` returns `1`, and `improved_reverse_kl` returns `-1`.
   - Reverse-KL regression: with `divergence_type="reverse_kl"`, advantages
     after `incorporate_kl_penalty` match the prior implementation bit-exactly
     on a fixed batch.

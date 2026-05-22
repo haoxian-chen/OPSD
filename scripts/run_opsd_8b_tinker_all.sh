@@ -20,7 +20,7 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-read -r -a DIVERGENCE_LIST <<< "${DIVERGENCES:-reverse_kl forward_kl jsd improved_forward_kl improved_jsd}"
+read -r -a DIVERGENCE_LIST <<< "${DIVERGENCES:-reverse_kl forward_kl jsd improved_forward_kl improved_reverse_kl improved_jsd}"
 
 if (( ${#DIVERGENCE_LIST[@]} == 0 )); then
     echo "error: DIVERGENCES did not contain any entries" >&2
@@ -29,10 +29,10 @@ fi
 
 for div in "${DIVERGENCE_LIST[@]}"; do
     case "$div" in
-        reverse_kl|forward_kl|jsd|improved_forward_kl|improved_jsd) ;;
+        reverse_kl|forward_kl|jsd|improved_forward_kl|improved_reverse_kl|improved_jsd) ;;
         *)
             echo "error: unknown divergence_type '$div'" >&2
-            echo "       must be one of: reverse_kl forward_kl jsd improved_forward_kl improved_jsd" >&2
+            echo "       must be one of: reverse_kl forward_kl jsd improved_forward_kl improved_reverse_kl improved_jsd" >&2
             exit 1
             ;;
     esac

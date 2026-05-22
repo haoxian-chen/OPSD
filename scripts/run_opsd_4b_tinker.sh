@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Run OPSD on Qwen3-4B (thinking mode) with the Tinker-style sampled-token
-# loss for any of the 5 supported f-divergences.
+# loss for any of the 6 supported f-divergences.
 #
 # Usage:
 #   bash scripts/run_opsd_4b_tinker.sh <divergence_type> [--smoke]
 #
-#   divergence_type: reverse_kl | forward_kl | jsd | improved_forward_kl | improved_jsd
+#   divergence_type: reverse_kl | forward_kl | jsd | improved_forward_kl | improved_reverse_kl | improved_jsd
 #   --smoke: short run for pipeline validation
 #
 # Env overrides:
@@ -18,10 +18,10 @@ DIV="${1:?usage: $0 <divergence_type> [--smoke]}"
 SMOKE="${2:-}"
 
 case "$DIV" in
-    reverse_kl|forward_kl|jsd|improved_forward_kl|improved_jsd) ;;
+    reverse_kl|forward_kl|jsd|improved_forward_kl|improved_reverse_kl|improved_jsd) ;;
     *)
         echo "error: unknown divergence_type '$DIV'" >&2
-        echo "       must be one of: reverse_kl forward_kl jsd improved_forward_kl improved_jsd" >&2
+        echo "       must be one of: reverse_kl forward_kl jsd improved_forward_kl improved_reverse_kl improved_jsd" >&2
         exit 1
         ;;
 esac
