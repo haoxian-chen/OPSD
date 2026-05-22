@@ -37,7 +37,7 @@ elif [[ -n "$SMOKE" ]]; then
     exit 1
 else
     RUN_CONFIG="qwen38b_tinker_${DIV}"
-    STEP_ARGS=(--num_train_epochs 1 --save_steps 25 --logging_steps 2 --max_completion_length 1024)
+    STEP_ARGS=(--max_steps 300 --save_steps 25 --logging_steps 2 --max_completion_length 1024)
 fi
 
 echo "[run_opsd_8b_tinker] MODEL=$MODEL"

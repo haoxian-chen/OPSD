@@ -24,6 +24,7 @@ OUT="${OUT:-/data0/siyanz/opsd}"
 OUT="${OUT%/}"
 DIVERGENCES="${DIVERGENCES:-reverse_kl forward_kl jsd improved_forward_kl improved_jsd}"
 STEP_LIST="${STEP_LIST:-0,25,50,75,100,125,150,175,200}"
+MAX_ALLOWED_STEP="${MAX_ALLOWED_STEP:-200}"
 DATASET="${DATASET:-aime24}"
 VAL_N="${VAL_N:-12}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
@@ -61,6 +62,12 @@ done
 for step in "${STEPS[@]}"; do
     if ! [[ "$step" =~ ^[0-9]+$ ]]; then
         echo "error: checkpoint step must be numeric, got '$step'" >&2
+        exit 1
+    fi
+    if (( step > MAX_ALLOWED_STEP )); then
+        echo "error: STEP_LIST contains checkpoint-$step, but this script is capped at $MAX_ALLOWED_STEP" >&2
+        echo "       Current STEP_LIST=$STEP_LIST" >&2
+        echo "       If this was intentional, rerun with MAX_ALLOWED_STEP=$step or use a broader eval script." >&2
         exit 1
     fi
 done
@@ -108,6 +115,7 @@ fi
 echo "[run_eval_8b_tinker_all_0_200_thinking] BASE_MODEL=$BASE_MODEL"
 echo "[run_eval_8b_tinker_all_0_200_thinking] OUT=$OUT"
 echo "[run_eval_8b_tinker_all_0_200_thinking] mode=thinking dataset=$DATASET val_n=$VAL_N steps=${STEP_LIST}"
+echo "[run_eval_8b_tinker_all_0_200_thinking] max_allowed_step=${MAX_ALLOWED_STEP}"
 echo "[run_eval_8b_tinker_all_0_200_thinking] divergences=${DIVERGENCES}"
 echo "[run_eval_8b_tinker_all_0_200_thinking] WANDB_PROJECT=${WANDB_PROJECT:-disabled}"
 
