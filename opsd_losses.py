@@ -17,6 +17,7 @@ DIVERGENCE_TYPES = (
     "reverse_kl",
     "forward_kl",
     "jsd",
+    "improved_reverse_kl",
     "improved_forward_kl",
     "improved_jsd",
 )
@@ -38,6 +39,8 @@ def _compute_neg_g_u(log_u: torch.Tensor, divergence_type: str) -> torch.Tensor:
     """
     if divergence_type == "reverse_kl":
         return log_u
+    if divergence_type == "improved_reverse_kl":
+        return log_u - 1.0  
 
     log_u_clamped = torch.clamp(log_u.float(), min=-10.0, max=10.0)
     u = torch.exp(log_u_clamped)
@@ -46,6 +49,7 @@ def _compute_neg_g_u(log_u: torch.Tensor, divergence_type: str) -> torch.Tensor:
         return -u * log_u_clamped
     if divergence_type == "jsd":
         return -0.5 * (u * log_u_clamped - (u + 1.0) * (torch.log1p(u) - _LOG2))
+
     if divergence_type == "improved_forward_kl":
         return u - 1.0
     if divergence_type == "improved_jsd":

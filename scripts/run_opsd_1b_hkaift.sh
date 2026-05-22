@@ -19,10 +19,10 @@ DIV="${1:?usage: $0 <divergence_type> [--smoke]}"
 SMOKE="${2:-}"
 
 case "$DIV" in
-    reverse_kl|forward_kl|jsd|improved_forward_kl|improved_jsd) ;;
+    reverse_kl|forward_kl|jsd|improved_reverse_kl|improved_forward_kl|improved_jsd) ;;
     *)
         echo "error: unknown divergence_type '$DIV'" >&2
-        echo "       must be one of: reverse_kl forward_kl jsd improved_forward_kl improved_jsd" >&2
+        echo "       must be one of: reverse_kl forward_kl jsd improved_reverse_kl improved_forward_kl improved_jsd" >&2
         exit 1
         ;;
 esac
