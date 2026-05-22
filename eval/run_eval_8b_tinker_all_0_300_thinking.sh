@@ -16,6 +16,7 @@
 #   STEP_LIST=0,25,50,75,100,125,150,175,200,225,250,275,300
 #   DATASETS="aime24 aime25 hmmt25"  VAL_N=12
 #   DATASET=aime24  # backwards-compatible single-dataset override
+#   SKIP_EXISTING=1  # skip evals whose result JSON already exists
 #   CUDA_VISIBLE_DEVICES=0,1,2,3  TENSOR_PARALLEL_SIZE=4
 
 set -euo pipefail
@@ -27,6 +28,7 @@ DIVERGENCES="${DIVERGENCES:-reverse_kl forward_kl jsd improved_forward_kl improv
 STEP_LIST="${STEP_LIST:-0,25,50,75,100,125,150,175,200,225,250,275,300}"
 MAX_ALLOWED_STEP="${MAX_ALLOWED_STEP:-300}"
 DATASETS="${DATASETS:-${DATASET:-aime24 aime25 hmmt25}}"
+SKIP_EXISTING="${SKIP_EXISTING:-1}"
 VAL_N="${VAL_N:-12}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
@@ -91,13 +93,35 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_NAME="$(basename "$0" .sh)"
+BASE_MODEL_NAME="$(basename "$BASE_MODEL")"
 cd "$SCRIPT_DIR"
+
+result_file_for() {
+    local dataset="$1"
+    local run_config="${2:-}"
+    local checkpoint_name="${3:-}"
+    local filename="eval_results_${dataset}_${BASE_MODEL_NAME}"
+
+    if [[ -n "$run_config" && -n "$checkpoint_name" ]]; then
+        filename+="_${run_config}_${checkpoint_name}"
+    fi
+
+    filename+="_thinking_temp${TEMPERATURE}_valn${VAL_N}.json"
+    printf 'eval_results/%s' "$filename"
+}
+
+should_skip_result() {
+    local output_file="$1"
+
+    [[ "$SKIP_EXISTING" == "1" && -s "$output_file" ]]
+}
 
 echo "[${SCRIPT_NAME}] BASE_MODEL=$BASE_MODEL"
 echo "[${SCRIPT_NAME}] OUT=$OUT"
 echo "[${SCRIPT_NAME}] mode=thinking datasets=${DATASETS} val_n=$VAL_N steps=${STEP_LIST}"
 echo "[${SCRIPT_NAME}] max_allowed_step=${MAX_ALLOWED_STEP}"
 echo "[${SCRIPT_NAME}] divergences=${DIVERGENCES}"
+echo "[${SCRIPT_NAME}] skip_existing=${SKIP_EXISTING}"
 echo "[${SCRIPT_NAME}] WANDB_PROJECT=${WANDB_PROJECT:-disabled}"
 
 for dataset in "${DATASET_LIST[@]}"; do
@@ -145,9 +169,17 @@ for dataset in "${DATASET_LIST[@]}"; do
     for step in "${STEPS[@]}"; do
         if [[ "$step" == "0" ]]; then
             if [[ "$BASE_DONE" == "0" ]]; then
+                output_file="$(result_file_for "$dataset")"
+                if should_skip_result "$output_file"; then
+                    echo "[${SCRIPT_NAME}] skipping dataset=$dataset shared base model as step 0; exists: $output_file"
+                    BASE_DONE=1
+                    continue
+                fi
+
                 echo "[${SCRIPT_NAME}] evaluating dataset=$dataset shared base model as step 0"
                 NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" python evaluate_math.py \
                     "${EVAL_ARGS[@]}" \
+                    --output_file "$output_file" \
                     --wandb_step 0 \
                     --wandb_divergence base \
                     --wandb_run_name "eval_qwen38b_tinker_base_${dataset}_thinking"
@@ -160,6 +192,12 @@ for dataset in "${DATASET_LIST[@]}"; do
             run_config="qwen38b_tinker_${div}"
             exp_dir="$OUT/$run_config"
             checkpoint_dir="$exp_dir/checkpoint-$step"
+            output_file="$(result_file_for "$dataset" "$run_config" "checkpoint-$step")"
+
+            if should_skip_result "$output_file"; then
+                echo "[${SCRIPT_NAME}] skipping dataset=$dataset divergence_type=$div checkpoint-$step; exists: $output_file"
+                continue
+            fi
 
             if [[ ! -d "$exp_dir" ]]; then
                 echo "error: experiment directory does not exist: $exp_dir" >&2
@@ -175,6 +213,7 @@ for dataset in "${DATASET_LIST[@]}"; do
             NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" python evaluate_math.py \
                 "${EVAL_ARGS[@]}" \
                 --checkpoint_dir "$checkpoint_dir" \
+                --output_file "$output_file" \
                 --wandb_step "$step" \
                 --wandb_divergence "$div" \
                 --wandb_run_name "eval_${run_config}_checkpoint-${step}_${dataset}_thinking"
