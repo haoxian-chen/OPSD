@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Evaluate all available checkpoints up to checkpoint-300 for reverse_kl and
+# Evaluate all available checkpoints up to checkpoint-50 for reverse_kl and
 # the improved divergence runs produced by scripts/run_opsd_1b_hkaift.sh.
 #
 # Results are saved by evaluate_math.py under eval/eval_results using its
@@ -7,12 +7,12 @@
 #   eval_results_<dataset>_<base>_<run_config>_<checkpoint>_<mode>_temp...json
 #
 # Usage:
-#   bash eval/run_eval_1b_hkaift_reverse_improved_to_300_7gpu.sh
+#   bash eval/run_eval_1b_hkaift_reverse_improved_to_50_7gpu.sh
 #
 # Useful overrides:
 #   BASE_MODEL=/path/or/hf-id  OUT=/path/to/output
 #   DIVERGENCES="reverse_kl improved_forward_kl improved_reverse_kl improved_jsd"
-#   MAX_STEP=300  DATASET=aime24  VAL_N=12  THINKING=1
+#   MAX_STEP=50  DATASET=aime24  VAL_N=12  THINKING=1
 #   CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6  TENSOR_PARALLEL_SIZE=7
 
 set -euo pipefail
@@ -21,7 +21,7 @@ BASE_MODEL="${BASE_MODEL:-${MODEL:-Qwen/Qwen3-1.7B}}"
 OUT="${OUT:-/home/hanyang/OPSD/runs/1b_tinker}"
 OUT="${OUT%/}"
 DIVERGENCES="${DIVERGENCES:-reverse_kl improved_forward_kl improved_reverse_kl improved_jsd}"
-MAX_STEP="${MAX_STEP:-300}"
+MAX_STEP="${MAX_STEP:-50}"
 DATASET="${DATASET:-aime24}"
 VAL_N="${VAL_N:-12}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
@@ -94,12 +94,12 @@ if [[ -n "${WANDB_PROJECT:-}" ]]; then
     fi
 fi
 
-echo "[run_eval_1b_hkaift_reverse_improved_to_300_7gpu] BASE_MODEL=$BASE_MODEL"
-echo "[run_eval_1b_hkaift_reverse_improved_to_300_7gpu] OUT=$OUT"
-echo "[run_eval_1b_hkaift_reverse_improved_to_300_7gpu] mode=$MODE_NAME dataset=$DATASET val_n=$VAL_N max_step=$MAX_STEP"
-echo "[run_eval_1b_hkaift_reverse_improved_to_300_7gpu] divergences=$DIVERGENCES"
-echo "[run_eval_1b_hkaift_reverse_improved_to_300_7gpu] cuda_visible_devices=$CUDA_VISIBLE_DEVICES tensor_parallel_size=$TENSOR_PARALLEL_SIZE"
-echo "[run_eval_1b_hkaift_reverse_improved_to_300_7gpu] results_dir=$SCRIPT_DIR/eval_results"
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] BASE_MODEL=$BASE_MODEL"
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] OUT=$OUT"
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] mode=$MODE_NAME dataset=$DATASET val_n=$VAL_N max_step=$MAX_STEP"
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] divergences=$DIVERGENCES"
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] cuda_visible_devices=$CUDA_VISIBLE_DEVICES tensor_parallel_size=$TENSOR_PARALLEL_SIZE"
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] results_dir=$SCRIPT_DIR/eval_results"
 
 for div in "${DIVERGENCE_LIST[@]}"; do
     case "$div" in
@@ -141,7 +141,7 @@ for div in "${DIVERGENCE_LIST[@]}"; do
         checkpoint_name="$(basename "$checkpoint_dir")"
         output_file="eval_results/eval_results_${DATASET}_$(basename "$BASE_MODEL")_${run_config}_${checkpoint_name}_${MODE_NAME}_temp${TEMPERATURE}_valn${VAL_N}.json"
 
-        echo "[run_eval_1b_hkaift_reverse_improved_to_300_7gpu] evaluating divergence_type=$div $checkpoint_name"
+        echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] evaluating divergence_type=$div $checkpoint_name"
         NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" python evaluate_math.py \
             "${EVAL_ARGS[@]}" \
             --checkpoint_dir "$checkpoint_dir" \

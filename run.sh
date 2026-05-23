@@ -5,12 +5,14 @@
 #   bash run.sh
 #
 # Defaults:
-#   DIVERGENCES="reverse_kl improved_forward_kl improved_reverse_kl improved_jsd"
-#   eval uses eval/run_eval_1b_hkaift_reverse_improved_to_300_7gpu.sh
+#   TRAIN_DIVERGENCES="improved_forward_kl improved_jsd"
+#   EVAL_DIVERGENCES="reverse_kl improved_forward_kl improved_reverse_kl improved_jsd"
+#   eval uses eval/run_eval_1b_hkaift_reverse_improved_to_50_7gpu.sh
 #
 # Useful overrides:
-#   TRAIN_DIVERGENCES="reverse_kl improved_jsd" bash run.sh
+#   TRAIN_DIVERGENCES="improved_jsd" bash run.sh
 #   EVAL_DIVERGENCES="reverse_kl improved_jsd" bash run.sh
+#   MAX_STEP=25 bash run.sh
 #   RUN_TRAINING=0 bash run.sh
 #   RUN_EVAL=0 bash run.sh
 
@@ -25,12 +27,13 @@ fi
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-DIVERGENCES="${DIVERGENCES:-reverse_kl improved_forward_kl improved_reverse_kl improved_jsd}"
-TRAIN_DIVERGENCES="${TRAIN_DIVERGENCES:-$DIVERGENCES}"
-EVAL_DIVERGENCES="${EVAL_DIVERGENCES:-$DIVERGENCES}"
+DEFAULT_TRAIN_DIVERGENCES="improved_forward_kl improved_jsd"
+DEFAULT_EVAL_DIVERGENCES="reverse_kl improved_forward_kl improved_reverse_kl improved_jsd"
+TRAIN_DIVERGENCES="${TRAIN_DIVERGENCES:-$DEFAULT_TRAIN_DIVERGENCES}"
+EVAL_DIVERGENCES="${EVAL_DIVERGENCES:-$DEFAULT_EVAL_DIVERGENCES}"
 RUN_TRAINING="${RUN_TRAINING:-1}"
 RUN_EVAL="${RUN_EVAL:-1}"
-EVAL_SCRIPT="${EVAL_SCRIPT:-eval/run_eval_1b_hkaift_reverse_improved_to_300_7gpu.sh}"
+EVAL_SCRIPT="${EVAL_SCRIPT:-eval/run_eval_1b_hkaift_reverse_improved_to_50_7gpu.sh}"
 if [[ "$EVAL_SCRIPT" == /* ]]; then
     EVAL_SCRIPT_PATH="$EVAL_SCRIPT"
 else
