@@ -24,13 +24,14 @@ set -euo pipefail
 BASE_MODEL="${BASE_MODEL:-${MODEL:-/data0/shared/Qwen3-8B}}"
 OUT="${OUT:-/data0/siyanz/opsd}"
 OUT="${OUT%/}"
-DIVERGENCES="${DIVERGENCES:-reverse_kl forward_kl jsd improved_forward_kl improved_jsd}"
+DIVERGENCES="${DIVERGENCES:-reverse_kl forward_kl jsd improved_forward_kl improved_reverse_kl improved_jsd}"
 STEP_LIST="${STEP_LIST:-0,25,50,75,100,125,150,175,200,225,250,275,300}"
 MAX_ALLOWED_STEP="${MAX_ALLOWED_STEP:-300}"
 DATASETS="${DATASETS:-${DATASET:-aime24 aime25 hmmt25}}"
 SKIP_EXISTING="${SKIP_EXISTING:-1}"
 VAL_N="${VAL_N:-12}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
+SEED="${SEED:-42}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
 TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-4}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.9}"
@@ -58,10 +59,10 @@ fi
 
 for div in "${DIVERGENCE_LIST[@]}"; do
     case "$div" in
-        reverse_kl|forward_kl|jsd|improved_forward_kl|improved_jsd) ;;
+        reverse_kl|forward_kl|jsd|improved_forward_kl|improved_reverse_kl|improved_jsd) ;;
         *)
             echo "error: unknown divergence_type '$div'" >&2
-            echo "       must be one of: reverse_kl forward_kl jsd improved_forward_kl improved_jsd" >&2
+            echo "       must be one of: reverse_kl forward_kl jsd improved_forward_kl improved_reverse_kl improved_jsd" >&2
             exit 1
             ;;
     esac
@@ -134,6 +135,7 @@ for dataset in "${DATASET_LIST[@]}"; do
         --tensor_parallel_size "$TENSOR_PARALLEL_SIZE"
         --gpu_memory_utilization "$GPU_MEMORY_UTILIZATION"
         --max_new_tokens "$MAX_NEW_TOKENS"
+        --seed "$SEED"
         --enable_thinking
     )
 

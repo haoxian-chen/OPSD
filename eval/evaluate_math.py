@@ -279,6 +279,7 @@ def evaluate_math500(
     base_model_name: str = None,
     enable_thinking: bool = True,
     val_n: int = 1,
+    seed: int | None = None,
 ):
     """
     Evaluate model on MATH500 or other datasets using Qwen3 thinking mode with best practices.
@@ -380,6 +381,7 @@ def evaluate_math500(
         max_tokens=max_new_tokens,
         presence_penalty=presence_penalty,
         n=val_n,  # Generate val_n solutions per prompt
+        seed=seed,
     )
 
     total = 0
@@ -617,6 +619,7 @@ def evaluate_math500(
         "presence_penalty": presence_penalty,
         "max_new_tokens": max_new_tokens,
         "val_n": val_n,
+        "seed": seed,
         "num_problems": num_problems,
         "total_solutions": total,
         "pass_at_n": pass_at_n,
@@ -727,6 +730,15 @@ def main():
     )
     parser.add_argument(
         "--val_n", type=int, default=6, help="Number of solutions to sample per problem (default: 6)"
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Base sampling seed for vLLM. Same seed across runs makes paired comparisons "
+        "between different model checkpoints reproducible (common-random-numbers trick). "
+        "vLLM derives per-sample seeds from this base, so the val_n samples per prompt are "
+        "still distinct but bit-exact reproducible. Default: None (non-deterministic).",
     )
     parser.add_argument(
         "--wandb_project",
@@ -889,6 +901,7 @@ def main():
         base_model_name=args.base_model,
         enable_thinking=args.enable_thinking,
         val_n=args.val_n,
+        seed=args.seed,
     )
     log_summary_to_wandb(args, summary)
 

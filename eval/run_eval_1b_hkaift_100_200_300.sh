@@ -20,10 +20,10 @@ set -euo pipefail
 DIV="${1:?usage: $0 <divergence_type>}"
 
 case "$DIV" in
-    reverse_kl|forward_kl|jsd|improved_forward_kl|improved_jsd) ;;
+    reverse_kl|forward_kl|jsd|improved_forward_kl|improved_reverse_kl|improved_jsd) ;;
     *)
         echo "error: unknown divergence_type '$DIV'" >&2
-        echo "       must be one of: reverse_kl forward_kl jsd improved_forward_kl improved_jsd" >&2
+        echo "       must be one of: reverse_kl forward_kl jsd improved_forward_kl improved_reverse_kl improved_jsd" >&2
         exit 1
         ;;
 esac
@@ -36,6 +36,7 @@ STEP_LIST="${STEP_LIST:-100,200,300}"
 DATASET="${DATASET:-aime24}"
 VAL_N="${VAL_N:-12}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
+SEED="${SEED:-42}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
 TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-4}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.9}"
@@ -89,6 +90,7 @@ EVAL_ARGS=(
     --dataset "$DATASET"
     --val_n "$VAL_N"
     --temperature "$TEMPERATURE"
+    --seed "$SEED"
     --tensor_parallel_size "$TENSOR_PARALLEL_SIZE"
     --gpu_memory_utilization "$GPU_MEMORY_UTILIZATION"
     --max_new_tokens "$MAX_NEW_TOKENS"

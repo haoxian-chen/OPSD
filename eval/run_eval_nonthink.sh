@@ -9,6 +9,7 @@ NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES=0,1,2,3 python evaluate_math.py \
     --dataset "aime24" \
     --val_n 12 \
     --temperature 1.0 \
+    --seed 42 \
     --tensor_parallel_size 4 \
     --no_thinking \
     --checkpoint_dir /data0/siyanz/opsd/qwen34b_gen1024_both_nonthink_fixteacher_temp11_forwardbeta0_clip1e-6/checkpoint-100

@@ -19,7 +19,6 @@ DIVERGENCE_TYPES = (
     "jsd",
     "improved_reverse_kl",
     "improved_forward_kl",
-    "improved_reverse_kl",
     "improved_jsd",
 )
 _LOG2 = math.log(2.0)

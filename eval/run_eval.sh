@@ -9,6 +9,7 @@ NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES=0,1,2,3 python evaluate_math.py \
     --dataset "aime24" \
     --val_n 12 \
     --temperature 1.0 \
+    --seed 42 \
     --tensor_parallel_size 4
 wait 
 
@@ -19,6 +20,7 @@ for step in 25 50 75 100; do
         --dataset "aime24" \
         --val_n 12 \
         --temperature 1.0 \
+        --seed 42 \
         --tensor_parallel_size 4 \
         --checkpoint_dir "$EXP_DIR/checkpoint-$step"
 done
