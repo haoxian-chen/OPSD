@@ -13,6 +13,7 @@
 #   TRAIN_DIVERGENCES="improved_jsd" bash run.sh
 #   EVAL_DIVERGENCES="reverse_kl improved_jsd" bash run.sh
 #   MAX_STEP=25 bash run.sh
+#   EVAL_GPUS=0,1,2,3,4,5,6 PARALLEL_JOBS=7 bash run.sh
 #   RUN_TRAINING=0 bash run.sh
 #   RUN_EVAL=0 bash run.sh
 

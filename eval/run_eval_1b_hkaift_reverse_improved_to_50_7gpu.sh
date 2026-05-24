@@ -13,7 +13,7 @@
 #   BASE_MODEL=/path/or/hf-id  OUT=/path/to/output
 #   DIVERGENCES="reverse_kl improved_forward_kl improved_reverse_kl improved_jsd"
 #   MAX_STEP=50  DATASET=aime24  VAL_N=12  THINKING=1
-#   CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6  TENSOR_PARALLEL_SIZE=7
+#   EVAL_GPUS=0,1,2,3,4,5,6  PARALLEL_JOBS=7
 
 set -euo pipefail
 
@@ -26,18 +26,33 @@ DATASET="${DATASET:-aime24}"
 VAL_N="${VAL_N:-12}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
 SEED="${SEED:-42}"
-CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3,4,5,6}"
-TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-7}"
+EVAL_GPUS="${EVAL_GPUS:-${CUDA_VISIBLE_DEVICES:-0,1,2,3,4,5,6}}"
+TENSOR_PARALLEL_SIZE=1
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.9}"
+LOG_DIR="${LOG_DIR:-eval_logs}"
 
 read -r -a DIVERGENCE_LIST <<< "$DIVERGENCES"
+read -r -a GPU_LIST <<< "${EVAL_GPUS//,/ }"
+PARALLEL_JOBS="${PARALLEL_JOBS:-${#GPU_LIST[@]}}"
 
 if (( ${#DIVERGENCE_LIST[@]} == 0 )); then
     echo "error: DIVERGENCES did not contain any entries" >&2
     exit 1
 fi
+if (( ${#GPU_LIST[@]} == 0 )); then
+    echo "error: EVAL_GPUS did not contain any GPU ids" >&2
+    exit 1
+fi
 if ! [[ "$MAX_STEP" =~ ^[0-9]+$ ]]; then
     echo "error: MAX_STEP must be numeric, got '$MAX_STEP'" >&2
+    exit 1
+fi
+if ! [[ "$PARALLEL_JOBS" =~ ^[0-9]+$ ]] || (( PARALLEL_JOBS < 1 )); then
+    echo "error: PARALLEL_JOBS must be a positive integer, got '$PARALLEL_JOBS'" >&2
+    exit 1
+fi
+if (( PARALLEL_JOBS > ${#GPU_LIST[@]} )); then
+    echo "error: PARALLEL_JOBS=$PARALLEL_JOBS exceeds the number of EVAL_GPUS (${#GPU_LIST[@]})" >&2
     exit 1
 fi
 
@@ -53,6 +68,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 mkdir -p eval_results
+mkdir -p "$LOG_DIR"
 
 EVAL_ARGS=(
     --base_model "$BASE_MODEL"
@@ -98,8 +114,15 @@ echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] BASE_MODEL=$BASE_MODEL"
 echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] OUT=$OUT"
 echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] mode=$MODE_NAME dataset=$DATASET val_n=$VAL_N max_step=$MAX_STEP"
 echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] divergences=$DIVERGENCES"
-echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] cuda_visible_devices=$CUDA_VISIBLE_DEVICES tensor_parallel_size=$TENSOR_PARALLEL_SIZE"
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] eval_gpus=$EVAL_GPUS parallel_jobs=$PARALLEL_JOBS tensor_parallel_size=$TENSOR_PARALLEL_SIZE"
 echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] results_dir=$SCRIPT_DIR/eval_results"
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] log_dir=$SCRIPT_DIR/$LOG_DIR"
+
+TASK_DIVS=()
+TASK_STEPS=()
+TASK_CHECKPOINT_DIRS=()
+TASK_OUTPUT_FILES=()
+TASK_RUN_CONFIGS=()
 
 for div in "${DIVERGENCE_LIST[@]}"; do
     case "$div" in
@@ -141,13 +164,80 @@ for div in "${DIVERGENCE_LIST[@]}"; do
         checkpoint_name="$(basename "$checkpoint_dir")"
         output_file="eval_results/eval_results_${DATASET}_$(basename "$BASE_MODEL")_${run_config}_${checkpoint_name}_${MODE_NAME}_temp${TEMPERATURE}_valn${VAL_N}.json"
 
-        echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] evaluating divergence_type=$div $checkpoint_name"
-        NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" python evaluate_math.py \
-            "${EVAL_ARGS[@]}" \
-            --checkpoint_dir "$checkpoint_dir" \
-            --output_file "$output_file" \
-            --wandb_step "$step" \
-            --wandb_divergence "$div" \
-            --wandb_run_name "eval_${run_config}_${checkpoint_name}_${DATASET}_${MODE_NAME}"
+        TASK_DIVS+=("$div")
+        TASK_STEPS+=("$step")
+        TASK_CHECKPOINT_DIRS+=("$checkpoint_dir")
+        TASK_OUTPUT_FILES+=("$output_file")
+        TASK_RUN_CONFIGS+=("$run_config")
     done
 done
+
+if (( ${#TASK_DIVS[@]} == 0 )); then
+    echo "error: no evaluation tasks were created" >&2
+    exit 1
+fi
+
+run_eval_task() {
+    local gpu="$1"
+    local div="$2"
+    local step="$3"
+    local checkpoint_dir="$4"
+    local output_file="$5"
+    local run_config="$6"
+    local checkpoint_name
+    local log_file
+
+    checkpoint_name="$(basename "$checkpoint_dir")"
+    log_file="$LOG_DIR/${run_config}_${checkpoint_name}_${DATASET}_${MODE_NAME}.log"
+
+    echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] starting gpu=$gpu divergence_type=$div $checkpoint_name log=$log_file"
+    NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES="$gpu" python evaluate_math.py \
+        "${EVAL_ARGS[@]}" \
+        --checkpoint_dir "$checkpoint_dir" \
+        --output_file "$output_file" \
+        --wandb_step "$step" \
+        --wandb_divergence "$div" \
+        --wandb_run_name "eval_${run_config}_${checkpoint_name}_${DATASET}_${MODE_NAME}" \
+        > "$log_file" 2>&1
+    echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] finished gpu=$gpu divergence_type=$div $checkpoint_name"
+}
+
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] queued ${#TASK_DIVS[@]} checkpoint eval tasks"
+
+for (( batch_start=0; batch_start<${#TASK_DIVS[@]}; batch_start+=PARALLEL_JOBS )); do
+    PIDS=()
+    LABELS=()
+
+    for (( slot=0; slot<PARALLEL_JOBS && batch_start+slot<${#TASK_DIVS[@]}; slot++ )); do
+        task_idx=$((batch_start + slot))
+        gpu="${GPU_LIST[$slot]}"
+        checkpoint_name="$(basename "${TASK_CHECKPOINT_DIRS[$task_idx]}")"
+        label="${TASK_DIVS[$task_idx]}:${checkpoint_name}:gpu${gpu}"
+
+        run_eval_task \
+            "$gpu" \
+            "${TASK_DIVS[$task_idx]}" \
+            "${TASK_STEPS[$task_idx]}" \
+            "${TASK_CHECKPOINT_DIRS[$task_idx]}" \
+            "${TASK_OUTPUT_FILES[$task_idx]}" \
+            "${TASK_RUN_CONFIGS[$task_idx]}" &
+
+        PIDS+=("$!")
+        LABELS+=("$label")
+    done
+
+    batch_failed=0
+    for idx in "${!PIDS[@]}"; do
+        if ! wait "${PIDS[$idx]}"; then
+            echo "error: eval task failed: ${LABELS[$idx]}" >&2
+            batch_failed=1
+        fi
+    done
+
+    if (( batch_failed != 0 )); then
+        echo "error: stopping after failed eval batch; see logs under $SCRIPT_DIR/$LOG_DIR" >&2
+        exit 1
+    fi
+done
+
+echo "[run_eval_1b_hkaift_reverse_improved_to_50_7gpu] all eval tasks finished"
