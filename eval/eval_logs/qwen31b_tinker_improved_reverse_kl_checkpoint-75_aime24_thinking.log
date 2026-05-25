@@ -110,4 +110,102 @@ LoRA path: /home/hanyang/OPSD/runs/1b_tinker/qwen31b_tinker_improved_reverse_kl/
 
 Adding requests:   0%|          | 0/30 [00:00<?, ?it/s]WARNING 05-25 00:23:23 [processor.py:215] vLLM has deprecated support for supporting different tokenizers for different LoRAs. By default, vLLM uses base model's tokenizer. If you are using a LoRA with its own tokenizer, consider specifying `--tokenizer [lora_path]` to use the LoRA tokenizer.
 Adding requests: 100%|██████████| 30/30 [00:00<00:00, 725.44it/s]
-Processed prompts:   0%|          | 0/360 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:   3%|▎         | 12/360 [09:54<4:47:26, 49.56s/it, est. speed input: 3.15 toks/s, output: 135.16 toks/s]Processed prompts:   7%|▋         | 24/360 [28:44<7:04:19, 75.77s/it, est. speed input: 1.77 toks/s, output: 198.73 toks/s]Processed prompts:  10%|█         | 36/360 [40:31<6:07:39, 68.08s/it, est. speed input: 1.77 toks/s, output: 239.60 toks/s]Processed prompts:  13%|█▎        | 48/360 [41:15<3:41:51, 42.66s/it, est. speed input: 2.37 toks/s, output: 343.67 toks/s]Processed prompts:  17%|█▋        | 60/360 [45:32<2:54:55, 34.99s/it, est. speed input: 2.53 toks/s, output: 375.18 toks/s]
+Processed prompts:   0%|          | 0/360 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:   3%|▎         | 12/360 [09:54<4:47:26, 49.56s/it, est. speed input: 3.15 toks/s, output: 135.16 toks/s]Processed prompts:   7%|▋         | 24/360 [28:44<7:04:19, 75.77s/it, est. speed input: 1.77 toks/s, output: 198.73 toks/s]Processed prompts:  10%|█         | 36/360 [40:31<6:07:39, 68.08s/it, est. speed input: 1.77 toks/s, output: 239.60 toks/s]Processed prompts:  13%|█▎        | 48/360 [41:15<3:41:51, 42.66s/it, est. speed input: 2.37 toks/s, output: 343.67 toks/s]Processed prompts:  17%|█▋        | 60/360 [45:32<2:54:55, 34.99s/it, est. speed input: 2.53 toks/s, output: 375.18 toks/s]Processed prompts:  20%|██        | 72/360 [1:06:36<4:42:50, 58.92s/it, est. speed input: 2.26 toks/s, output: 334.36 toks/s]Processed prompts:  23%|██▎       | 84/360 [1:08:04<3:13:26, 42.05s/it, est. speed input: 2.64 toks/s, output: 350.51 toks/s]Processed prompts:  27%|██▋       | 96/360 [1:08:26<2:08:40, 29.25s/it, est. speed input: 2.98 toks/s, output: 409.31 toks/s]Processed prompts:  30%|███       | 108/360 [1:13:05<1:55:00, 27.38s/it, est. speed input: 2.99 toks/s, output: 409.92 toks/s]Processed prompts:  33%|███▎      | 120/360 [1:18:50<1:51:08, 27.79s/it, est. speed input: 2.97 toks/s, output: 405.31 toks/s]Processed prompts:  37%|███▋      | 132/360 [1:20:16<1:21:38, 21.48s/it, est. speed input: 3.22 toks/s, output: 431.60 toks/s]Processed prompts:  40%|████      | 144/360 [1:28:25<1:38:24, 27.34s/it, est. speed input: 3.08 toks/s, output: 420.86 toks/s]Processed prompts:  43%|████▎     | 156/360 [1:30:26<1:15:13, 22.13s/it, est. speed input: 3.23 toks/s, output: 455.90 toks/s]Processed prompts:  47%|████▋     | 168/360 [1:33:03<1:02:03, 19.39s/it, est. speed input: 3.39 toks/s, output: 475.90 toks/s]Processed prompts:  50%|█████     | 180/360 [1:44:43<1:33:22, 31.12s/it, est. speed input: 3.22 toks/s, output: 455.10 toks/s]Processed prompts:  53%|█████▎    | 192/360 [1:52:50<1:35:07, 33.97s/it, est. speed input: 3.23 toks/s, output: 455.05 toks/s]Processed prompts:  57%|█████▋    | 204/360 [1:55:49<1:13:23, 28.23s/it, est. speed input: 3.28 toks/s, output: 469.37 toks/s]Processed prompts:  60%|██████    | 216/360 [2:14:44<1:55:37, 48.18s/it, est. speed input: 2.98 toks/s, output: 438.94 toks/s]Processed prompts:  63%|██████▎   | 228/360 [2:18:02<1:25:03, 38.67s/it, est. speed input: 3.23 toks/s, output: 460.37 toks/s]Processed prompts:  67%|██████▋   | 240/360 [2:22:01<1:06:05, 33.04s/it, est. speed input: 3.25 toks/s, output: 463.52 toks/s]Processed prompts:  70%|███████   | 252/360 [2:32:12<1:09:07, 38.41s/it, est. speed input: 3.30 toks/s, output: 455.89 toks/s]Processed prompts:  73%|███████▎  | 264/360 [2:35:29<50:53, 31.80s/it, est. speed input: 3.45 toks/s, output: 476.20 toks/s]  Processed prompts:  77%|███████▋  | 276/360 [2:44:07<49:17, 35.21s/it, est. speed input: 3.47 toks/s, output: 460.37 toks/s]Processed prompts:  80%|████████  | 288/360 [2:53:11<45:54, 38.26s/it, est. speed input: 3.48 toks/s, output: 454.95 toks/s]Processed prompts:  83%|████████▎ | 300/360 [2:54:15<28:22, 28.37s/it, est. speed input: 3.57 toks/s, output: 474.63 toks/s]Processed prompts:  87%|████████▋ | 312/360 [2:59:17<21:54, 27.39s/it, est. speed input: 3.56 toks/s, output: 481.59 toks/s]Processed prompts:  90%|█████████ | 324/360 [3:01:58<13:55, 23.22s/it, est. speed input: 3.60 toks/s, output: 492.11 toks/s]Processed prompts:  93%|█████████▎| 336/360 [3:24:14<19:51, 49.65s/it, est. speed input: 3.30 toks/s, output: 464.16 toks/s]Processed prompts:  97%|█████████▋| 348/360 [3:27:52<08:02, 40.20s/it, est. speed input: 3.36 toks/s, output: 471.51 toks/s]Processed prompts: 100%|██████████| 360/360 [3:28:46<00:00, 29.48s/it, est. speed input: 3.75 toks/s, output: 491.78 toks/s]Processed prompts: 100%|██████████| 360/360 [3:28:46<00:00, 29.48s/it, est. speed input: 3.75 toks/s, output: 491.78 toks/s]Processed prompts: 100%|██████████| 360/360 [3:28:46<00:00, 34.79s/it, est. speed input: 3.75 toks/s, output: 491.78 toks/s]
+
+Processing results...
+✓ [1/30] Pass@12: 100.0% | Avg@12: 100.0% | Formatted: 100.0%
+✓ [2/30] Pass@12: 100.0% | Avg@12: 75.0% | Formatted: 100.0%
+✗ [3/30] Pass@12: 66.7% | Avg@12: 50.0% | Formatted: 100.0%
+✗ [4/30] Pass@12: 50.0% | Avg@12: 37.5% | Formatted: 100.0%
+✓ [5/30] Pass@12: 60.0% | Avg@12: 33.3% | Formatted: 100.0%
+✓ [6/30] Pass@12: 66.7% | Avg@12: 33.3% | Formatted: 100.0%
+✓ [7/30] Pass@12: 71.4% | Avg@12: 36.9% | Formatted: 100.0%
+✓ [8/30] Pass@12: 75.0% | Avg@12: 44.8% | Formatted: 100.0%
+✓ [9/30] Pass@12: 77.8% | Avg@12: 50.0% | Formatted: 100.0%
+✓ [10/30] Pass@12: 80.0% | Avg@12: 55.0% | Formatted: 100.0%
+
+======================================================================
+Progress: 10/30
+Pass@12: 80.00%
+Average@12: 55.00%
+Format Rate: 100.00%
+Last problem: Jen enters a lottery by picking $4$ distinct numbers from $S=\{1,2,3,\cdots,9,10\}.$ $4$ numbers are...
+Solutions correct: 12/12
+Majority vote: ✓
+Ground truth: 116
+======================================================================
+
+✓ [11/30] Pass@12: 81.8% | Avg@12: 53.0% | Formatted: 100.0%
+✓ [12/30] Pass@12: 83.3% | Avg@12: 56.9% | Formatted: 100.0%
+✓ [13/30] Pass@12: 84.6% | Avg@12: 60.3% | Formatted: 100.0%
+✗ [14/30] Pass@12: 78.6% | Avg@12: 56.0% | Formatted: 100.0%
+✓ [15/30] Pass@12: 80.0% | Avg@12: 57.2% | Formatted: 100.0%
+✓ [16/30] Pass@12: 81.2% | Avg@12: 56.8% | Formatted: 100.0%
+✓ [17/30] Pass@12: 82.4% | Avg@12: 57.8% | Formatted: 100.0%
+✓ [18/30] Pass@12: 83.3% | Avg@12: 56.5% | Formatted: 100.0%
+✓ [19/30] Pass@12: 84.2% | Avg@12: 54.8% | Formatted: 100.0%
+✓ [20/30] Pass@12: 85.0% | Avg@12: 56.7% | Formatted: 100.0%
+
+======================================================================
+Progress: 20/30
+Pass@12: 85.00%
+Average@12: 56.67%
+Format Rate: 100.00%
+Last problem: Let $\omega\neq 1$ be a 13th root of unity. Find the remainder when
+\[\prod_{k=0}^{12}(2-2\omega^k+\...
+Solutions correct: 11/12
+Majority vote: ✓
+Ground truth: 321
+======================================================================
+
+✓ [21/30] Pass@12: 85.7% | Avg@12: 57.1% | Formatted: 100.0%
+✗ [22/30] Pass@12: 81.8% | Avg@12: 54.5% | Formatted: 100.0%
+✓ [23/30] Pass@12: 82.6% | Avg@12: 53.6% | Formatted: 100.0%
+✓ [24/30] Pass@12: 83.3% | Avg@12: 55.2% | Formatted: 100.0%
+✓ [25/30] Pass@12: 84.0% | Avg@12: 57.0% | Formatted: 100.0%
+✗ [26/30] Pass@12: 80.8% | Avg@12: 54.8% | Formatted: 100.0%
+✓ [27/30] Pass@12: 81.5% | Avg@12: 53.7% | Formatted: 100.0%
+✓ [28/30] Pass@12: 82.1% | Avg@12: 53.0% | Formatted: 100.0%
+✗ [29/30] Pass@12: 79.3% | Avg@12: 51.1% | Formatted: 100.0%
+✗ [30/30] Pass@12: 76.7% | Avg@12: 49.4% | Formatted: 100.0%
+
+======================================================================
+Progress: 30/30
+Pass@12: 76.67%
+Average@12: 49.44%
+Format Rate: 100.00%
+Last problem: There is a collection of $25$ indistinguishable white chips and $25$ indistinguishable black chips. ...
+Solutions correct: 0/12
+Majority vote: ✗
+Ground truth: 902
+======================================================================
+
+
+======================================================================
+FINAL RESULTS
+======================================================================
+Dataset: AIME24
+Thinking Mode: ENABLED
+Total problems: 30
+Solutions per problem: 12
+Total solutions: 360
+
+Metrics:
+  Pass@12: 76.67% (23/30)
+  Average@12: 49.44% (178/360)
+  Majority Vote@12: 63.33% (19/30)
+
+Formatting:
+  Formatted (boxed) answers: 360/360
+  Format rate: 100.00%
+======================================================================
+
+Detailed results saved to: eval_results/qwen31b_improved_reverse/eval_results_aime24_Qwen3-1.7B_qwen31b_tinker_improved_reverse_kl_checkpoint-75_thinking_temp1.0_valn12.json
+
+======================================================================
+EVALUATION COMPLETE!
+======================================================================
+Final Average@12: 49.44%
+Results saved to: eval_results/qwen31b_improved_reverse/eval_results_aime24_Qwen3-1.7B_qwen31b_tinker_improved_reverse_kl_checkpoint-75_thinking_temp1.0_valn12.json
+======================================================================
+
