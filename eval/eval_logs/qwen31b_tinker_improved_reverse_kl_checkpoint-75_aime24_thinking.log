@@ -1,0 +1,113 @@
+INFO 05-25 00:22:34 [__init__.py:216] Automatically detected platform cuda.
+Auto-setting top_p to 0.95 for thinking mode
+Results will be saved to: eval_results/qwen31b_improved_reverse/eval_results_aime24_Qwen3-1.7B_qwen31b_tinker_improved_reverse_kl_checkpoint-75_thinking_temp1.0_valn12.json
+
+======================================================================
+QWEN3 MATH EVALUATION WITH THINKING MODE
+======================================================================
+Dataset: AIME24
+Base model: Qwen/Qwen3-1.7B
+Checkpoint: /home/hanyang/OPSD/runs/1b_tinker/qwen31b_tinker_improved_reverse_kl/checkpoint-75
+Thinking Mode: ENABLED ✓
+Max tokens: 38912
+Temperature: 1.0 (Qwen3 thinking mode)
+Top-p: 0.95
+Top-k: -1
+Min-p: 0.0
+Presence penalty: 0.0
+Num samples: All
+Val-N (solutions per problem): 12
+Output file: eval_results/qwen31b_improved_reverse/eval_results_aime24_Qwen3-1.7B_qwen31b_tinker_improved_reverse_kl_checkpoint-75_thinking_temp1.0_valn12.json
+GPU memory utilization: 0.9
+Tensor parallel size: 1
+======================================================================
+
+Loading model with vLLM from: Qwen/Qwen3-1.7B
+Auto-setting max_model_len to 40960 for thinking mode
+LoRA adapter path provided: /home/hanyang/OPSD/runs/1b_tinker/qwen31b_tinker_improved_reverse_kl/checkpoint-75
+LoRA weights found. Enabling LoRA support...
+INFO 05-25 00:22:49 [utils.py:233] non-default args: {'trust_remote_code': True, 'max_model_len': 40960, 'distributed_executor_backend': 'mp', 'disable_log_stats': True, 'enforce_eager': True, 'enable_lora': True, 'max_lora_rank': 64, 'max_cpu_loras': 1, 'model': 'Qwen/Qwen3-1.7B'}
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+INFO 05-25 00:22:51 [model.py:547] Resolved architecture: Qwen3ForCausalLM
+`torch_dtype` is deprecated! Use `dtype` instead!
+INFO 05-25 00:22:51 [model.py:1510] Using max model len 40960
+INFO 05-25 00:22:53 [scheduler.py:205] Chunked prefill is enabled with max_num_batched_tokens=8192.
+WARNING 05-25 00:22:53 [lora.py:92] `lora_extra_vocab_size` is deprecated and will be removed in v0.12.0. Additional vocabulary support for LoRA adapters is being phased out.
+INFO 05-25 00:22:53 [__init__.py:381] Cudagraph is disabled under eager mode
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m INFO 05-25 00:22:54 [core.py:644] Waiting for init message from front-end.
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m INFO 05-25 00:22:54 [core.py:77] Initializing a V1 LLM engine (v0.11.0) with config: model='Qwen/Qwen3-1.7B', speculative_config=None, tokenizer='Qwen/Qwen3-1.7B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=40960, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_fallback=False, disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser=''), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None), seed=0, served_model_name=Qwen/Qwen3-1.7B, enable_prefix_caching=True, chunked_prefill_enabled=True, pooler_config=None, compilation_config={"level":0,"debug_dump_path":"","cache_dir":"","backend":"","custom_ops":[],"splitting_ops":null,"use_inductor":true,"compile_sizes":[],"inductor_compile_config":{"enable_auto_functionalized_v2":false},"inductor_passes":{},"cudagraph_mode":0,"use_cudagraph":true,"cudagraph_num_of_warmups":0,"cudagraph_capture_sizes":[],"cudagraph_copy_inputs":false,"full_cuda_graph":false,"use_inductor_graph_partition":false,"pass_config":{},"max_capture_size":0,"local_cache_dir":null}
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m WARNING 05-25 00:22:54 [multiproc_executor.py:720] Reducing Torch parallelism from 48 threads to 1 to avoid unnecessary CPU contention. Set OMP_NUM_THREADS in the external environment to tune this value as needed.
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m INFO 05-25 00:22:54 [shm_broadcast.py:289] vLLM message queue communication handle: Handle(local_reader_ranks=[0], buffer_handle=(1, 16777216, 10, 'psm_9e5ead76'), local_subscribe_addr='ipc:///tmp/43d8664e-b5de-43de-b3c2-345dd08c68a2', remote_subscribe_addr=None, remote_addr_ipv6=False)
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m INFO 05-25 00:23:08 [shm_broadcast.py:289] vLLM message queue communication handle: Handle(local_reader_ranks=[0], buffer_handle=(1, 10485760, 10, 'psm_fe7c6e82'), local_subscribe_addr='ipc:///tmp/70240fa4-8e50-4225-9ab6-97cdf7861c6f', remote_subscribe_addr=None, remote_addr_ipv6=False)
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m INFO 05-25 00:23:09 [parallel_state.py:1208] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, TP rank 0, EP rank 0
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m WARNING 05-25 00:23:10 [topk_topp_sampler.py:66] FlashInfer is not available. Falling back to the PyTorch-native implementation of top-p & top-k sampling. For the best performance, please install FlashInfer.
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m INFO 05-25 00:23:10 [gpu_model_runner.py:2602] Starting to load model Qwen/Qwen3-1.7B...
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m INFO 05-25 00:23:10 [gpu_model_runner.py:2634] Loading model from scratch...
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m INFO 05-25 00:23:10 [cuda.py:366] Using Flash Attention backend on V1 engine.
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m INFO 05-25 00:23:11 [weight_utils.py:392] Using model weights format ['*.safetensors']
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.68it/s]
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:00<00:00,  3.34it/s]
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m 
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m INFO 05-25 00:23:12 [default_loader.py:267] Loading weights took 0.68 seconds
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m INFO 05-25 00:23:12 [punica_selector.py:19] Using PunicaWrapperGPU.
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m INFO 05-25 00:23:13 [gpu_model_runner.py:2653] Model loading took 3.3454 GiB and 2.146214 seconds
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m INFO 05-25 00:23:16 [gpu_worker.py:298] Available KV cache memory: 35.19 GiB
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m INFO 05-25 00:23:16 [kv_cache_utils.py:1087] GPU KV cache size: 329,424 tokens
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m INFO 05-25 00:23:16 [kv_cache_utils.py:1091] Maximum concurrency for 40,960 tokens per request: 8.04x
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m [1;36m(Worker pid=3218697)[0;0m WARNING 05-25 00:23:16 [cudagraph_dispatcher.py:106] cudagraph dispatching keys are not initialized. No cudagraph will be used.
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m INFO 05-25 00:23:16 [core.py:210] init engine (profile, create kv cache, warmup model) took 3.08 seconds
+[1;36m(EngineCore_DP0 pid=3218669)[0;0m INFO 05-25 00:23:17 [__init__.py:381] Cudagraph is disabled under eager mode
+INFO 05-25 00:23:18 [llm.py:306] Supported_tasks: ['generate']
+
+======================================================================
+MODEL DTYPE INFORMATION
+======================================================================
+vLLM Model Config dtype: torch.bfloat16
+vLLM Model quantization: None
+KV cache dtype: auto
+======================================================================
+
+vLLM model loaded successfully!
+✓ Successfully created LoRA request for: /home/hanyang/OPSD/runs/1b_tinker/qwen31b_tinker_improved_reverse_kl/checkpoint-75
+
+======================================================================
+EVALUATION CONFIGURATION
+======================================================================
+Dataset: AIME24
+Thinking Mode: ENABLED
+Temperature: 1.0 (Qwen3 thinking mode)
+Top-P: 0.95
+Top-K: -1
+Min-P: 0.0
+Presence Penalty: 0.0
+Max New Tokens: 38912
+Val-N (solutions per problem): 12
+======================================================================
+
+Loading AIME24 dataset...
+Loaded HuggingFaceH4/aime_2024 dataset with 30 problems
+Evaluating on 30 problems with vLLM batch inference...
+
+Running vLLM batch inference on 30 problems...
+Using generate interface with manual chat template...
+
+======================================================================
+GENERATION DTYPE CHECK
+======================================================================
+Model dtype: torch.bfloat16
+Quantization: None
+KV cache dtype: auto
+Using LoRA: True
+LoRA path: /home/hanyang/OPSD/runs/1b_tinker/qwen31b_tinker_improved_reverse_kl/checkpoint-75
+======================================================================
+
+Adding requests:   0%|          | 0/30 [00:00<?, ?it/s]WARNING 05-25 00:23:23 [processor.py:215] vLLM has deprecated support for supporting different tokenizers for different LoRAs. By default, vLLM uses base model's tokenizer. If you are using a LoRA with its own tokenizer, consider specifying `--tokenizer [lora_path]` to use the LoRA tokenizer.
+Adding requests: 100%|██████████| 30/30 [00:00<00:00, 725.44it/s]
+Processed prompts:   0%|          | 0/360 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:   3%|▎         | 12/360 [09:54<4:47:26, 49.56s/it, est. speed input: 3.15 toks/s, output: 135.16 toks/s]Processed prompts:   7%|▋         | 24/360 [28:44<7:04:19, 75.77s/it, est. speed input: 1.77 toks/s, output: 198.73 toks/s]Processed prompts:  10%|█         | 36/360 [40:31<6:07:39, 68.08s/it, est. speed input: 1.77 toks/s, output: 239.60 toks/s]Processed prompts:  13%|█▎        | 48/360 [41:15<3:41:51, 42.66s/it, est. speed input: 2.37 toks/s, output: 343.67 toks/s]Processed prompts:  17%|█▋        | 60/360 [45:32<2:54:55, 34.99s/it, est. speed input: 2.53 toks/s, output: 375.18 toks/s]
