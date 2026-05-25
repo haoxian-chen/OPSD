@@ -6,3 +6,5 @@ plans/
 # .env*.local
 wandb/
 runs/
+eval/eval_results/
+eval/eval_results/
