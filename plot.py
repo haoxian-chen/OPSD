@@ -22,6 +22,10 @@ OUT_DIR = RESULTS_DIR / "plots"
 
 METRIC = "average_at_n_pct"
 
+BASE_MODEL_RESULT_FILES = {
+    "eval_results_aime24_Qwen3-1.7B_thinking_temp1.0_valn12.json",
+}
+
 DATASET_TITLE = {
     "aime24": "AIME 2024",
     "aime25": "AIME 2025",
@@ -114,6 +118,10 @@ def _extract_divergence(path: Path) -> str:
     raise ValueError(f"could not infer divergence type from {path}")
 
 
+def _is_base_model_result(path: Path) -> bool:
+    return path.name in BASE_MODEL_RESULT_FILES
+
+
 def _collect_results(results_dir: Path) -> pd.DataFrame:
     rows = []
     recovered = []
@@ -124,15 +132,27 @@ def _collect_results(results_dir: Path) -> pd.DataFrame:
             data, did_recover = _load_json(path)
             dataset = data["dataset"]
             value = float(data[METRIC])
-            rows.append(
-                {
-                    "dataset": dataset,
-                    "divergence": _extract_divergence(path),
-                    "step": _extract_step(path),
-                    METRIC: value,
-                    "path": str(path),
-                }
-            )
+            if _is_base_model_result(path):
+                for divergence in DIVERGENCE_ORDER:
+                    rows.append(
+                        {
+                            "dataset": dataset,
+                            "divergence": divergence,
+                            "step": 0,
+                            METRIC: value,
+                            "path": str(path),
+                        }
+                    )
+            else:
+                rows.append(
+                    {
+                        "dataset": dataset,
+                        "divergence": _extract_divergence(path),
+                        "step": _extract_step(path),
+                        METRIC: value,
+                        "path": str(path),
+                    }
+                )
             if did_recover:
                 recovered.append(path)
         except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:

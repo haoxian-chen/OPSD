@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Evaluate Qwen3-1.7B HKAIFT checkpoints on 3 single-GPU workers.
+# Evaluate Qwen3-1.7B HKAIFT checkpoints on 7 single-GPU workers.
 #
-# This evaluates all supported divergence runs on aime25 only, using exactly
-# checkpoints 25, 75, and 125.
+# This evaluates the base model and all supported divergence runs on aime25
+# only, using exactly checkpoints 25, 75, and 125.
 #
-# Results are saved under eval/eval_results/<divergence-dir>/ using the
-# standard filename pattern:
+# Checkpoint results are saved under eval/eval_results/<divergence-dir>/ using
+# the standard filename pattern:
 #   eval_results_<dataset>_<base>_<run_config>_<checkpoint>_<mode>_temp...json
+# The base-model result is saved directly under eval/eval_results/.
 #
 # Usage:
 #   bash eval/run_eval_1b_hkaift_all_3gpu.sh
@@ -15,7 +16,7 @@
 #   BASE_MODEL=/path/or/hf-id  OUT=/path/to/output
 #   DIVERGENCES="reverse_kl forward_kl jsd improved_forward_kl improved_reverse_kl improved_jsd"
 #   VAL_N=12  THINKING=1
-#   EVAL_GPUS=4,5,6  PARALLEL_JOBS=3
+#   EVAL_GPUS=0,1,2,3,4,5,6  PARALLEL_JOBS=7
 
 set -euo pipefail
 
@@ -31,7 +32,7 @@ CHECKPOINT_STEPS=(25 75 125)
 VAL_N="${VAL_N:-12}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
 SEED="${SEED:-42}"
-EVAL_GPUS="${EVAL_GPUS:-${CUDA_VISIBLE_DEVICES:-4,5,6}}"
+EVAL_GPUS="${EVAL_GPUS:-${CUDA_VISIBLE_DEVICES:-0,1,2,3,4,5,6}}"
 TENSOR_PARALLEL_SIZE=1
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.9}"
 LOG_DIR="${LOG_DIR:-eval_logs}"
@@ -139,7 +140,7 @@ fi
 
 echo "[$SCRIPT_NAME] BASE_MODEL=$BASE_MODEL"
 echo "[$SCRIPT_NAME] OUT=$OUT"
-echo "[$SCRIPT_NAME] mode=$MODE_NAME dataset=$DATASET val_n=$VAL_N checkpoint_steps=${CHECKPOINT_STEPS[*]}"
+echo "[$SCRIPT_NAME] mode=$MODE_NAME dataset=$DATASET val_n=$VAL_N checkpoint_steps=${CHECKPOINT_STEPS[*]} include_base_model=1"
 echo "[$SCRIPT_NAME] divergences=$DIVERGENCES"
 echo "[$SCRIPT_NAME] eval_gpus=$EVAL_GPUS parallel_jobs=$PARALLEL_JOBS tensor_parallel_size=$TENSOR_PARALLEL_SIZE"
 echo "[$SCRIPT_NAME] results_dir=$SCRIPT_DIR/eval_results"
@@ -154,19 +155,29 @@ run_eval_task() {
     local run_config="$6"
     local checkpoint_name
     local log_file
+    local checkpoint_args=()
+    local wandb_run_name
 
-    checkpoint_name="$(basename "$checkpoint_dir")"
-    log_file="$LOG_DIR/${run_config}_${checkpoint_name}_${DATASET}_${MODE_NAME}.log"
+    if [[ -n "$checkpoint_dir" ]]; then
+        checkpoint_name="$(basename "$checkpoint_dir")"
+        checkpoint_args=(--checkpoint_dir "$checkpoint_dir")
+        wandb_run_name="eval_${run_config}_${checkpoint_name}_${DATASET}_${MODE_NAME}"
+        log_file="$LOG_DIR/${run_config}_${checkpoint_name}_${DATASET}_${MODE_NAME}.log"
+    else
+        checkpoint_name="base"
+        wandb_run_name="eval_${run_config}_${DATASET}_${MODE_NAME}_valn${VAL_N}"
+        log_file="$LOG_DIR/${run_config}_${DATASET}_${MODE_NAME}.log"
+    fi
 
     echo "[$SCRIPT_NAME] starting dataset=$DATASET gpu=$gpu divergence_type=$div $checkpoint_name output=$output_file log=$log_file"
     NCCL_P2P_DISABLE=1 CUDA_VISIBLE_DEVICES="$gpu" python evaluate_math.py \
         "${COMMON_EVAL_ARGS[@]}" \
         --dataset "$DATASET" \
-        --checkpoint_dir "$checkpoint_dir" \
+        "${checkpoint_args[@]}" \
         --output_file "$output_file" \
         --wandb_step "$step" \
         --wandb_divergence "$div" \
-        --wandb_run_name "eval_${run_config}_${checkpoint_name}_${DATASET}_${MODE_NAME}" \
+        --wandb_run_name "$wandb_run_name" \
         > "$log_file" 2>&1
     echo "[$SCRIPT_NAME] finished dataset=$DATASET gpu=$gpu divergence_type=$div $checkpoint_name"
 }
@@ -176,6 +187,12 @@ TASK_STEPS=()
 TASK_CHECKPOINT_DIRS=()
 TASK_OUTPUT_FILES=()
 TASK_RUN_CONFIGS=()
+
+TASK_DIVS+=("base")
+TASK_STEPS+=("0")
+TASK_CHECKPOINT_DIRS+=("")
+TASK_OUTPUT_FILES+=("eval_results/eval_results_${DATASET}_${BASE_MODEL_NAME}_${MODE_NAME}_temp${TEMPERATURE}_valn${VAL_N}.json")
+TASK_RUN_CONFIGS+=("qwen31b_hkaift_base")
 
 for div in "${DIVERGENCE_LIST[@]}"; do
     run_config="qwen31b_tinker_${div}"
@@ -213,7 +230,7 @@ if (( ${#TASK_DIVS[@]} == 0 )); then
     exit 1
 fi
 
-echo "[$SCRIPT_NAME] queued ${#TASK_DIVS[@]} checkpoint eval tasks for dataset=$DATASET"
+echo "[$SCRIPT_NAME] queued ${#TASK_DIVS[@]} eval tasks for dataset=$DATASET"
 
 for (( batch_start=0; batch_start<${#TASK_DIVS[@]}; batch_start+=PARALLEL_JOBS )); do
     PIDS=()
@@ -222,7 +239,11 @@ for (( batch_start=0; batch_start<${#TASK_DIVS[@]}; batch_start+=PARALLEL_JOBS )
     for (( slot=0; slot<PARALLEL_JOBS && batch_start+slot<${#TASK_DIVS[@]}; slot++ )); do
         task_idx=$((batch_start + slot))
         gpu="${GPU_LIST[$slot]}"
-        checkpoint_name="$(basename "${TASK_CHECKPOINT_DIRS[$task_idx]}")"
+        if [[ -n "${TASK_CHECKPOINT_DIRS[$task_idx]}" ]]; then
+            checkpoint_name="$(basename "${TASK_CHECKPOINT_DIRS[$task_idx]}")"
+        else
+            checkpoint_name="base"
+        fi
         label="${DATASET}:${TASK_DIVS[$task_idx]}:${checkpoint_name}:gpu${gpu}"
 
         run_eval_task \
