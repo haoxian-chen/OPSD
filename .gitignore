@@ -6,4 +6,4 @@ plans/
 # .env*.local
 wandb/
 runs/
-eval/eval_results/
+eval/eval_results/qwen31b_improved_reverse/eval_results_aime24_Qwen3-1.7B_qwen31b_tinker_improved_reverse_kl_checkpoint-200_thinking_temp1.0_valn12.jsoneval/eval_results/qwen31b_improved_reverse/eval_results_aime24_Qwen3-1.7B_qwen31b_tinker_improved_reverse_kl_checkpoint-200_thinking_temp1.0_valn12.json
