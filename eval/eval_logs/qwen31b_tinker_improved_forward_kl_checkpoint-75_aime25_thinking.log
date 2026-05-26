@@ -1,0 +1,211 @@
+INFO 05-26 00:27:25 [__init__.py:216] Automatically detected platform cuda.
+Auto-setting top_p to 0.95 for thinking mode
+Results will be saved to: eval_results/qwen31b_improved_forward/eval_results_aime25_Qwen3-1.7B_qwen31b_tinker_improved_forward_kl_checkpoint-75_thinking_temp1.0_valn12.json
+
+======================================================================
+QWEN3 MATH EVALUATION WITH THINKING MODE
+======================================================================
+Dataset: AIME25
+Base model: Qwen/Qwen3-1.7B
+Checkpoint: /home/hanyang/OPSD/runs/1b_tinker/qwen31b_tinker_improved_forward_kl/checkpoint-75
+Thinking Mode: ENABLED ✓
+Max tokens: 38912
+Temperature: 1.0 (Qwen3 thinking mode)
+Top-p: 0.95
+Top-k: -1
+Min-p: 0.0
+Presence penalty: 0.0
+Num samples: All
+Val-N (solutions per problem): 12
+Output file: eval_results/qwen31b_improved_forward/eval_results_aime25_Qwen3-1.7B_qwen31b_tinker_improved_forward_kl_checkpoint-75_thinking_temp1.0_valn12.json
+GPU memory utilization: 0.9
+Tensor parallel size: 1
+======================================================================
+
+Loading model with vLLM from: Qwen/Qwen3-1.7B
+Auto-setting max_model_len to 40960 for thinking mode
+LoRA adapter path provided: /home/hanyang/OPSD/runs/1b_tinker/qwen31b_tinker_improved_forward_kl/checkpoint-75
+LoRA weights found. Enabling LoRA support...
+INFO 05-26 00:27:40 [utils.py:233] non-default args: {'trust_remote_code': True, 'max_model_len': 40960, 'distributed_executor_backend': 'mp', 'disable_log_stats': True, 'enforce_eager': True, 'enable_lora': True, 'max_lora_rank': 64, 'max_cpu_loras': 1, 'model': 'Qwen/Qwen3-1.7B'}
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+INFO 05-26 00:27:41 [model.py:547] Resolved architecture: Qwen3ForCausalLM
+`torch_dtype` is deprecated! Use `dtype` instead!
+INFO 05-26 00:27:41 [model.py:1510] Using max model len 40960
+INFO 05-26 00:27:43 [scheduler.py:205] Chunked prefill is enabled with max_num_batched_tokens=8192.
+WARNING 05-26 00:27:43 [lora.py:92] `lora_extra_vocab_size` is deprecated and will be removed in v0.12.0. Additional vocabulary support for LoRA adapters is being phased out.
+INFO 05-26 00:27:43 [__init__.py:381] Cudagraph is disabled under eager mode
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m INFO 05-26 00:27:45 [core.py:644] Waiting for init message from front-end.
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m INFO 05-26 00:27:45 [core.py:77] Initializing a V1 LLM engine (v0.11.0) with config: model='Qwen/Qwen3-1.7B', speculative_config=None, tokenizer='Qwen/Qwen3-1.7B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=40960, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_fallback=False, disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser=''), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None), seed=0, served_model_name=Qwen/Qwen3-1.7B, enable_prefix_caching=True, chunked_prefill_enabled=True, pooler_config=None, compilation_config={"level":0,"debug_dump_path":"","cache_dir":"","backend":"","custom_ops":[],"splitting_ops":null,"use_inductor":true,"compile_sizes":[],"inductor_compile_config":{"enable_auto_functionalized_v2":false},"inductor_passes":{},"cudagraph_mode":0,"use_cudagraph":true,"cudagraph_num_of_warmups":0,"cudagraph_capture_sizes":[],"cudagraph_copy_inputs":false,"full_cuda_graph":false,"use_inductor_graph_partition":false,"pass_config":{},"max_capture_size":0,"local_cache_dir":null}
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m WARNING 05-26 00:27:45 [multiproc_executor.py:720] Reducing Torch parallelism from 48 threads to 1 to avoid unnecessary CPU contention. Set OMP_NUM_THREADS in the external environment to tune this value as needed.
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m INFO 05-26 00:27:45 [shm_broadcast.py:289] vLLM message queue communication handle: Handle(local_reader_ranks=[0], buffer_handle=(1, 16777216, 10, 'psm_78eda289'), local_subscribe_addr='ipc:///tmp/61a93b58-06a0-4656-8264-63c7ca77cfa1', remote_subscribe_addr=None, remote_addr_ipv6=False)
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m INFO 05-26 00:27:59 [shm_broadcast.py:289] vLLM message queue communication handle: Handle(local_reader_ranks=[0], buffer_handle=(1, 10485760, 10, 'psm_86e75597'), local_subscribe_addr='ipc:///tmp/33213eea-79eb-497a-ab90-53cad76c421d', remote_subscribe_addr=None, remote_addr_ipv6=False)
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m INFO 05-26 00:28:01 [parallel_state.py:1208] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, TP rank 0, EP rank 0
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m WARNING 05-26 00:28:01 [topk_topp_sampler.py:66] FlashInfer is not available. Falling back to the PyTorch-native implementation of top-p & top-k sampling. For the best performance, please install FlashInfer.
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m INFO 05-26 00:28:01 [gpu_model_runner.py:2602] Starting to load model Qwen/Qwen3-1.7B...
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m INFO 05-26 00:28:01 [gpu_model_runner.py:2634] Loading model from scratch...
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m INFO 05-26 00:28:01 [cuda.py:366] Using Flash Attention backend on V1 engine.
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m INFO 05-26 00:28:02 [weight_utils.py:392] Using model weights format ['*.safetensors']
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.26it/s]
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:00<00:00,  2.50it/s]
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m 
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m INFO 05-26 00:28:04 [default_loader.py:267] Loading weights took 0.89 seconds
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m INFO 05-26 00:28:04 [punica_selector.py:19] Using PunicaWrapperGPU.
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m INFO 05-26 00:28:04 [gpu_model_runner.py:2653] Model loading took 3.3454 GiB and 2.363184 seconds
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m INFO 05-26 00:28:07 [gpu_worker.py:298] Available KV cache memory: 35.19 GiB
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m INFO 05-26 00:28:07 [kv_cache_utils.py:1087] GPU KV cache size: 329,424 tokens
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m INFO 05-26 00:28:07 [kv_cache_utils.py:1091] Maximum concurrency for 40,960 tokens per request: 8.04x
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m [1;36m(Worker pid=3557206)[0;0m WARNING 05-26 00:28:07 [cudagraph_dispatcher.py:106] cudagraph dispatching keys are not initialized. No cudagraph will be used.
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m INFO 05-26 00:28:07 [core.py:210] init engine (profile, create kv cache, warmup model) took 3.08 seconds
+[1;36m(EngineCore_DP0 pid=3557182)[0;0m INFO 05-26 00:28:09 [__init__.py:381] Cudagraph is disabled under eager mode
+INFO 05-26 00:28:09 [llm.py:306] Supported_tasks: ['generate']
+
+======================================================================
+MODEL DTYPE INFORMATION
+======================================================================
+vLLM Model Config dtype: torch.bfloat16
+vLLM Model quantization: None
+KV cache dtype: auto
+======================================================================
+
+vLLM model loaded successfully!
+✓ Successfully created LoRA request for: /home/hanyang/OPSD/runs/1b_tinker/qwen31b_tinker_improved_forward_kl/checkpoint-75
+
+======================================================================
+EVALUATION CONFIGURATION
+======================================================================
+Dataset: AIME25
+Thinking Mode: ENABLED
+Temperature: 1.0 (Qwen3 thinking mode)
+Top-P: 0.95
+Top-K: -1
+Min-P: 0.0
+Presence Penalty: 0.0
+Max New Tokens: 38912
+Val-N (solutions per problem): 12
+======================================================================
+
+Loading AIME25 dataset...
+Loaded yentinglin/aime_2025 dataset with 30 problems
+Evaluating on 30 problems with vLLM batch inference...
+
+Running vLLM batch inference on 30 problems...
+Using generate interface with manual chat template...
+
+======================================================================
+GENERATION DTYPE CHECK
+======================================================================
+Model dtype: torch.bfloat16
+Quantization: None
+KV cache dtype: auto
+Using LoRA: True
+LoRA path: /home/hanyang/OPSD/runs/1b_tinker/qwen31b_tinker_improved_forward_kl/checkpoint-75
+======================================================================
+
+Adding requests:   0%|          | 0/30 [00:00<?, ?it/s]WARNING 05-26 00:28:14 [processor.py:215] vLLM has deprecated support for supporting different tokenizers for different LoRAs. By default, vLLM uses base model's tokenizer. If you are using a LoRA with its own tokenizer, consider specifying `--tokenizer [lora_path]` to use the LoRA tokenizer.
+Adding requests: 100%|██████████| 30/30 [00:00<00:00, 559.15it/s]
+Processed prompts:   0%|          | 0/360 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:   3%|▎         | 12/360 [09:18<4:29:47, 46.52s/it, est. speed input: 1.16 toks/s, output: 103.15 toks/s]Processed prompts:   7%|▋         | 24/360 [10:46<2:11:22, 23.46s/it, est. speed input: 3.47 toks/s, output: 249.47 toks/s]Processed prompts:  10%|█         | 36/360 [21:12<3:17:37, 36.60s/it, est. speed input: 2.77 toks/s, output: 177.49 toks/s]Processed prompts:  13%|█▎        | 48/360 [23:10<2:15:20, 26.03s/it, est. speed input: 3.22 toks/s, output: 256.62 toks/s]Processed prompts:  17%|█▋        | 60/360 [24:10<1:32:10, 18.43s/it, est. speed input: 4.45 toks/s, output: 372.95 toks/s]Processed prompts:  20%|██        | 72/360 [28:29<1:33:38, 19.51s/it, est. speed input: 4.45 toks/s, output: 428.69 toks/s]Processed prompts:  23%|██▎       | 84/360 [29:52<1:10:51, 15.40s/it, est. speed input: 5.20 toks/s, output: 529.37 toks/s]Processed prompts:  27%|██▋       | 96/360 [51:11<3:15:23, 44.41s/it, est. speed input: 3.50 toks/s, output: 383.19 toks/s]Processed prompts:  30%|███       | 108/360 [1:03:06<3:26:30, 49.17s/it, est. speed input: 3.23 toks/s, output: 398.70 toks/s]Processed prompts:  33%|███▎      | 120/360 [1:11:25<3:07:15, 46.82s/it, est. speed input: 3.60 toks/s, output: 409.67 toks/s]Processed prompts:  37%|███▋      | 132/360 [1:26:31<3:31:17, 55.60s/it, est. speed input: 3.48 toks/s, output: 409.95 toks/s]Processed prompts:  40%|████      | 144/360 [1:44:04<3:55:19, 65.37s/it, est. speed input: 3.14 toks/s, output: 393.46 toks/s]Processed prompts:  43%|████▎     | 156/360 [1:48:56<3:00:02, 52.95s/it, est. speed input: 3.19 toks/s, output: 415.85 toks/s]Processed prompts:  47%|████▋     | 168/360 [1:58:36<2:44:56, 51.54s/it, est. speed input: 3.13 toks/s, output: 392.22 toks/s]Processed prompts:  50%|█████     | 180/360 [2:05:01<2:17:05, 45.70s/it, est. speed input: 3.06 toks/s, output: 381.10 toks/s]Processed prompts:  53%|█████▎    | 192/360 [2:08:49<1:45:26, 37.66s/it, est. speed input: 3.20 toks/s, output: 408.35 toks/s]Processed prompts:  57%|█████▋    | 204/360 [2:14:08<1:29:13, 34.32s/it, est. speed input: 3.21 toks/s, output: 424.46 toks/s]Processed prompts:  60%|██████    | 216/360 [2:25:16<1:37:44, 40.73s/it, est. speed input: 3.28 toks/s, output: 409.24 toks/s]Processed prompts:  63%|██████▎   | 228/360 [2:39:55<1:51:07, 50.51s/it, est. speed input: 3.34 toks/s, output: 404.95 toks/s]Processed prompts:  67%|██████▋   | 240/360 [2:41:26<1:15:13, 37.61s/it, est. speed input: 4.09 toks/s, output: 424.83 toks/s]Processed prompts:  70%|███████   | 252/360 [2:53:23<1:19:39, 44.25s/it, est. speed input: 3.94 toks/s, output: 412.19 toks/s]Processed prompts:  73%|███████▎  | 264/360 [3:04:15<1:15:39, 47.29s/it, est. speed input: 4.57 toks/s, output: 415.40 toks/s]Processed prompts:  77%|███████▋  | 276/360 [3:19:30<1:18:21, 55.98s/it, est. speed input: 4.33 toks/s, output: 400.94 toks/s]Processed prompts:  80%|████████  | 288/360 [3:21:48<51:09, 42.63s/it, est. speed input: 4.60 toks/s, output: 422.53 toks/s]  Processed prompts:  83%|████████▎ | 300/360 [3:27:15<38:01, 38.03s/it, est. speed input: 4.56 toks/s, output: 423.16 toks/s]Processed prompts:  87%|████████▋ | 312/360 [3:39:36<36:06, 45.14s/it, est. speed input: 4.38 toks/s, output: 416.64 toks/s]Processed prompts:  90%|█████████ | 324/360 [3:56:17<33:58, 56.62s/it, est. speed input: 4.31 toks/s, output: 414.29 toks/s]Processed prompts:  93%|█████████▎| 336/360 [4:08:59<23:28, 58.68s/it, est. speed input: 4.22 toks/s, output: 412.10 toks/s]Processed prompts:  97%|█████████▋| 348/360 [4:17:33<10:47, 53.93s/it, est. speed input: 4.17 toks/s, output: 417.96 toks/s]Processed prompts: 100%|██████████| 360/360 [4:23:57<00:00, 47.34s/it, est. speed input: 4.15 toks/s, output: 426.25 toks/s]Processed prompts: 100%|██████████| 360/360 [4:23:57<00:00, 47.34s/it, est. speed input: 4.15 toks/s, output: 426.25 toks/s]Processed prompts: 100%|██████████| 360/360 [4:23:57<00:00, 43.99s/it, est. speed input: 4.15 toks/s, output: 426.25 toks/s]
+
+Processing results...
+✓ [1/30] Pass@12: 100.0% | Avg@12: 100.0% | Formatted: 100.0%
+✓ [2/30] Pass@12: 100.0% | Avg@12: 91.7% | Formatted: 100.0%
+✓ [3/30] Pass@12: 100.0% | Avg@12: 94.4% | Formatted: 100.0%
+✓ [4/30] Pass@12: 100.0% | Avg@12: 95.8% | Formatted: 100.0%
+✓ [5/30] Pass@12: 100.0% | Avg@12: 85.0% | Formatted: 100.0%
+✓ [6/30] Pass@12: 100.0% | Avg@12: 84.7% | Formatted: 100.0%
+✗ [7/30] Pass@12: 85.7% | Avg@12: 72.6% | Formatted: 100.0%
+✓ [8/30] Pass@12: 87.5% | Avg@12: 67.7% | Formatted: 100.0%
+✓ [9/30] Pass@12: 88.9% | Avg@12: 62.0% | Formatted: 99.1%
+✗ [10/30] Pass@12: 80.0% | Avg@12: 55.8% | Formatted: 99.2%
+
+======================================================================
+Progress: 10/30
+Pass@12: 80.00%
+Average@12: 55.83%
+Format Rate: 99.17%
+Last problem: The 27 cells of a $3\times9$ grid are filled in using the numbers 1 through 9 so that each row conta...
+Solutions correct: 0/12
+Majority vote: ✗
+Ground truth: 81
+======================================================================
+
+✗ [11/30] Pass@12: 72.7% | Avg@12: 50.8% | Formatted: 99.2%
+✗ [12/30] Pass@12: 66.7% | Avg@12: 46.5% | Formatted: 99.3%
+✗ [13/30] Pass@12: 61.5% | Avg@12: 42.9% | Formatted: 99.4%
+✗ [14/30] Pass@12: 57.1% | Avg@12: 39.9% | Formatted: 99.4%
+✗ [15/30] Pass@12: 53.3% | Avg@12: 37.2% | Formatted: 99.4%
+✓ [16/30] Pass@12: 56.2% | Avg@12: 41.1% | Formatted: 99.5%
+✓ [17/30] Pass@12: 58.8% | Avg@12: 44.6% | Formatted: 99.5%
+✗ [18/30] Pass@12: 55.6% | Avg@12: 42.1% | Formatted: 99.5%
+✓ [19/30] Pass@12: 57.9% | Avg@12: 44.7% | Formatted: 99.6%
+✓ [20/30] Pass@12: 60.0% | Avg@12: 44.6% | Formatted: 99.6%
+
+======================================================================
+Progress: 20/30
+Pass@12: 60.00%
+Average@12: 44.58%
+Format Rate: 99.58%
+Last problem: Suppose $\triangle ABC$ has angles $\angle BAC = 84^\circ$, $\angle ABC = 60^\circ$, and $\angle ACB...
+Solutions correct: 5/12
+Majority vote: ✓
+Ground truth: 336
+======================================================================
+
+✓ [21/30] Pass@12: 61.9% | Avg@12: 44.4% | Formatted: 99.6%
+✓ [22/30] Pass@12: 63.6% | Avg@12: 42.8% | Formatted: 99.6%
+✗ [23/30] Pass@12: 60.9% | Avg@12: 40.9% | Formatted: 99.3%
+✓ [24/30] Pass@12: 62.5% | Avg@12: 40.6% | Formatted: 99.3%
+✗ [25/30] Pass@12: 60.0% | Avg@12: 39.0% | Formatted: 99.3%
+✓ [26/30] Pass@12: 61.5% | Avg@12: 37.8% | Formatted: 99.4%
+✗ [27/30] Pass@12: 59.3% | Avg@12: 36.4% | Formatted: 99.4%
+✗ [28/30] Pass@12: 57.1% | Avg@12: 35.1% | Formatted: 99.4%
+✓ [29/30] Pass@12: 58.6% | Avg@12: 35.6% | Formatted: 99.4%
+✗ [30/30] Pass@12: 56.7% | Avg@12: 34.4% | Formatted: 99.4%
+
+======================================================================
+Progress: 30/30
+Pass@12: 56.67%
+Average@12: 34.44%
+Format Rate: 99.44%
+Last problem: There are exactly three positive real numbers $k$ such that the function
+$$f(x) = \frac{(x - 18)(x -...
+Solutions correct: 0/12
+Majority vote: ✗
+Ground truth: 240
+======================================================================
+
+
+======================================================================
+FINAL RESULTS
+======================================================================
+Dataset: AIME25
+Thinking Mode: ENABLED
+Total problems: 30
+Solutions per problem: 12
+Total solutions: 360
+
+Metrics:
+  Pass@12: 56.67% (17/30)
+  Average@12: 34.44% (124/360)
+  Majority Vote@12: 40.00% (12/30)
+
+Formatting:
+  Formatted (boxed) answers: 358/360
+  Format rate: 99.44%
+======================================================================
+
+Detailed results saved to: eval_results/qwen31b_improved_forward/eval_results_aime25_Qwen3-1.7B_qwen31b_tinker_improved_forward_kl_checkpoint-75_thinking_temp1.0_valn12.json
+
+======================================================================
+EVALUATION COMPLETE!
+======================================================================
+Final Average@12: 34.44%
+Results saved to: eval_results/qwen31b_improved_forward/eval_results_aime25_Qwen3-1.7B_qwen31b_tinker_improved_forward_kl_checkpoint-75_thinking_temp1.0_valn12.json
+======================================================================
+
